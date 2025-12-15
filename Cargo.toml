@@ -1,5 +1,5 @@
 [package]
-name = "dice_roller"
+name = "oxidice"
 version = "0.1.0"
 edition = "2024"
 
@@ -15,8 +15,15 @@ pest = "2.8.4"
 pest_derive = "2.8.4"
 lazy_static = "1.5.0"
 
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "parser_benchmark"
+harness = false
+
 [profile.release]
 lto = true
 opt-level = 'z'    # 优化代码体积
-codegen-units = 1
+# codegen-units = 1 # 启用单一代码生成单元以提高优化效果
 panic = 'abort'    # 发生错误直接崩溃，不回溯堆栈

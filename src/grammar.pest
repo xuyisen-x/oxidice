@@ -26,17 +26,19 @@ neg = { "-" }
 pos = { "+" }
 
 // 骰子操作符 (不区分大小写)
-// 既是中缀 (1 d 20) 也是前缀 (d 20)
 dice_op = { ^"d" }
+fate_dice = { ^"f" }
+coin_dice = { ^"c" }
 
 // 比较运算符 (用于修饰符参数，如 r>5)
 // 注意顺序：长匹配优先 (>= 在 > 之前)
+neq = { "<>" }
 gte = { ">=" }
 lte = { "<=" }
 gt  = { ">" }
 lt  = { "<" }
 eq  = { "=" }
-compare_op = { gte | lte | gt | lt | eq }
+compare_op = { neq | gte | lte | gt | lt | eq }
 
 // ==========================================
 // 3. 骰子修饰符 (后缀运算符)
@@ -45,9 +47,6 @@ compare_op = { gte | lte | gt | lt | eq }
 // 修饰符参数：可选的比较符 + 必须的数值
 // 例如: >5, 3 (隐含=3)
 mod_param = { compare_op? ~ atom }
-compare_param = {compare_op ~ atom}
-// 限制参数：必须是数值
-limit_param = _{ atom }
 
 // Keep / Drop
 keep_high = { ^"kh" ~ atom? } // kh1, kh
@@ -55,13 +54,15 @@ keep_low  = { ^"kl" ~ atom? }
 drop_high = { ^"dh" ~ atom? }
 drop_low  = { ^"dl" ~ atom? }
 
+// Limit
+limit_times = { ^"lt" ~ atom } // Limit Times
+limit_count = { ^"lc" ~ atom } // Limit Counts
+limit = { limit_times ~ limit_count | limit_count ~ limit_times | limit_times | limit_count}
+
 // Reroll
-// 注意：ro 必须在 r 之前定义，否则 r 会抢先匹配
-reroll_once = { ^"ro" ~ mod_param }
-reroll      = { ^"r"  ~ mod_param }
+reroll      = { ^"r"  ~ mod_param ~ limit? }
 
 // Explode
-limit = { ^"l" ~ limit_param } // Limit
 compound_explode = { "!!" ~ mod_param? ~ limit?}
 explode          = { "!"  ~ mod_param? ~ limit?}
 
@@ -69,22 +70,30 @@ explode          = { "!"  ~ mod_param? ~ limit?}
 min = { ^"min" ~ atom }
 max  = { ^"max" ~ atom }
 
+// count_success
+count_successes = { ^"cs" ~ mod_param}
+deduct_failures = { ^"df" ~ mod_param}
+subtract_failures = { ^"sf" ~ mod_param}
+
 // 所有后缀修饰符的集合
 modifier = {
     keep_high | keep_low | drop_high | drop_low |
-    reroll_once | reroll | compound_explode | explode |
-    compare_param | min | max
+    reroll | compound_explode | explode |
+    min | max |
+    count_successes | deduct_failures | subtract_failures
 }
 
 // ==========================================
 // 4. 函数与列表
 // ==========================================
 
+filter = { ^"filter" ~ mod_param }
+
 // 函数名
-func_name = @{ 
+func_name = ${ 
     ^"floor" | ^"ceil" | ^"round" | ^"abs" | 
     ^"max" | ^"min" | ^"sum" | ^"avg" | ^"len" |
-    ^"rpdice" | ^"sortd" | ^"sort" | ^"tolist" }
+    ^"rpdice" | ^"sortd" | ^"sort" | ^"tolist" | filter }
 
 // 参数列表: 1, 2, 3
 args = { expr ~ ("," ~ expr)* }
@@ -109,13 +118,9 @@ atom = {
 }
 
 // B. 显式骰子层
-// 逻辑: 一个原子，后面"可选"跟一个 d 和另一个原子
+// 逻辑: 一个原子，后面"可选"跟一个 d 和另一个原子(也可以是 f 或者 c)
 // 只能跟一次！不能循环！
-// 例子: 
-//   1 d 20   -> 合法 (atom ~ dice_op ~ atom)
-//   1        -> 合法 (atom)
-//   1 d 20 d 20 -> 非法! 解析完 20 后，expr 层期待加减乘除，但遇到了 d，报错。
-dice_expr = { atom ~ (dice_op ~ atom)? | dice_op ~ atom }
+dice_expr = { atom ~ (dice_op ~ (atom | fate_dice | coin_dice))? | dice_op ~ (atom | fate_dice | coin_dice) }
 
 // D. 运算符分类
 bin_op    = _{ idiv | add | sub | mul | div | rem }
