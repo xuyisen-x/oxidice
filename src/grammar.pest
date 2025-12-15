@@ -1,0 +1,134 @@
+// ==========================================
+// 1. 基础配置
+// ==========================================
+
+// 隐式忽略空白字符 (空格、制表符、换行)
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+
+// 基础数字 (支持整数和小数，如 1, 20, 1.5)
+// @ 原子规则：数字中间不允许插空格
+number = @{ ASCII_DIGIT+ ~ ("." ~ ASCII_DIGIT+)? }
+
+// ==========================================
+// 2. 运算符定义
+// ==========================================
+
+// 算术运算符
+add = { "+" }
+sub = { "-" }
+mul = { "*" }
+idiv = { "//" }
+div = { "/" }
+rem = { "%" }
+
+// 正负号
+neg = { "-" }
+pos = { "+" }
+
+// 骰子操作符 (不区分大小写)
+// 既是中缀 (1 d 20) 也是前缀 (d 20)
+dice_op = { ^"d" }
+
+// 比较运算符 (用于修饰符参数，如 r>5)
+// 注意顺序：长匹配优先 (>= 在 > 之前)
+gte = { ">=" }
+lte = { "<=" }
+gt  = { ">" }
+lt  = { "<" }
+eq  = { "=" }
+compare_op = { gte | lte | gt | lt | eq }
+
+// ==========================================
+// 3. 骰子修饰符 (后缀运算符)
+// ==========================================
+
+// 修饰符参数：可选的比较符 + 必须的数值
+// 例如: >5, 3 (隐含=3)
+mod_param = { compare_op? ~ atom }
+compare_param = {compare_op ~ atom}
+// 限制参数：必须是数值
+limit_param = _{ atom }
+
+// Keep / Drop
+keep_high = { ^"kh" ~ atom? } // kh1, kh
+keep_low  = { ^"kl" ~ atom? }
+drop_high = { ^"dh" ~ atom? }
+drop_low  = { ^"dl" ~ atom? }
+
+// Reroll
+// 注意：ro 必须在 r 之前定义，否则 r 会抢先匹配
+reroll_once = { ^"ro" ~ mod_param }
+reroll      = { ^"r"  ~ mod_param }
+
+// Explode
+limit = { ^"l" ~ limit_param } // Limit
+compound_explode = { "!!" ~ mod_param? ~ limit?}
+explode          = { "!"  ~ mod_param? ~ limit?}
+
+// Min/max
+min = { ^"min" ~ atom }
+max  = { ^"max" ~ atom }
+
+// 所有后缀修饰符的集合
+modifier = {
+    keep_high | keep_low | drop_high | drop_low |
+    reroll_once | reroll | compound_explode | explode |
+    compare_param | min | max
+}
+
+// ==========================================
+// 4. 函数与列表
+// ==========================================
+
+// 函数名
+func_name = @{ 
+    ^"floor" | ^"ceil" | ^"round" | ^"abs" | 
+    ^"max" | ^"min" | ^"sum" | ^"avg" | ^"len" |
+    ^"rpdice" | ^"sortd" | ^"sort" | ^"tolist" }
+
+// 参数列表: 1, 2, 3
+args = { expr ~ ("," ~ expr)* }
+
+// 函数调用: max(1, 2)
+function = { func_name ~ "(" ~ args? ~ ")" }
+
+// 列表字面量: [1, 2d6]
+list = { "[" ~ args? ~ "]" }
+
+// ==========================================
+// 5. 表达式结构 (Pratt Friendly)
+// ==========================================
+
+// A. 原子
+atom = {
+    function |
+    list |
+    number |
+    "(" ~ expr ~ ")" |
+    "{" ~ expr ~ "}"
+}
+
+// B. 显式骰子层
+// 逻辑: 一个原子，后面"可选"跟一个 d 和另一个原子
+// 只能跟一次！不能循环！
+// 例子: 
+//   1 d 20   -> 合法 (atom ~ dice_op ~ atom)
+//   1        -> 合法 (atom)
+//   1 d 20 d 20 -> 非法! 解析完 20 后，expr 层期待加减乘除，但遇到了 d，报错。
+dice_expr = { atom ~ (dice_op ~ atom)? | dice_op ~ atom }
+
+// D. 运算符分类
+bin_op    = _{ idiv | add | sub | mul | div | rem }
+prefix_op = _{ neg | pos }
+postfix_op = _{ modifier }
+
+// E. 核心表达式
+// Pratt Parser 的"原子"单位现在变成了 dice_expr
+expr = { prefix_op* ~ dice_expr ~ postfix_op* ~ (bin_op ~ prefix_op* ~ dice_expr ~ postfix_op*)* }
+
+// ==========================================
+// 6. 文件入口
+// ==========================================
+
+// SOI: Start of Input, EOI: End of Input
+main = _{ SOI ~ expr ~ EOI }
