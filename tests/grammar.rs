@@ -388,8 +388,16 @@ fn test_sortd_args() {
 #[test]
 fn test_max_empty() {
     let result = parse_dice("max()");
+
     assert!(result.is_ok());
     assert_eq!(result.unwrap(), Expr::function(FunctionName::Max, vec![]))
+}
+
+#[test]
+fn test_wrong_dice() {
+    let result = parse_dice("2 * 2d");
+
+    assert!(result.is_err());
 }
 
 #[test]
@@ -1173,5 +1181,61 @@ fn test_malformed_float() {
     let result = parse_dice("1.2.3");
     // Pest 的 number 规则通常是 DIGIT+ ~ ("." ~ DIGIT+)?
     // 这通常会被解析为 Number(1.2) 然后剩下 ".3" 导致解析无法消耗完 EOI (End of Input)
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_wrong_modifer() {
+    let result = parse_dice("2d20khh2");
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_wrong_modifer2() {
+    let result = parse_dice("2d20xx");
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_wrong_modifer3() {
+    let result = parse_dice("2d20r<3lt1lt2");
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_wrong_modifer4() {
+    let result = parse_dice("2d20r<3lc1lc2");
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_wrong_modifer5() {
+    let result = parse_dice("2d20r<3lc1lc");
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_wrong_modifer6() {
+    let result = parse_dice("2d20r< 3lc1lt1");
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_wrong_dice2() {
+    let result = parse_dice("2da");
+
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_wrong_modifer7() {
+    let result = parse_dice("2d20css");
+
     assert!(result.is_err());
 }
