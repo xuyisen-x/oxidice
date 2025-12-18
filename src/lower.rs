@@ -2,7 +2,8 @@ use crate::types::expr::{
     BinOp, BinaryOp, DiceType, Expr, FunctionCall, FunctionName, ModifierNode, Type1Modifier,
     Type1Op, Type2Modifier, Type2Op, Type3Modifier, Type3Op,
 };
-use crate::types::hir::{HIR, ListType, NumberType};
+use crate::types::hir::{DicePoolType, HIR, ListType, NumberType};
+use crate::types::hir_rewriter::HirVisitor;
 
 // ==========================================
 // 从 AST 降低到 HIR
@@ -479,8 +480,32 @@ fn trate_as_list(args: Vec<HIR>) -> Result<ListType, String> {
 // ==========================================
 
 fn rpdice(orginal_hir: HIR) -> HIR {
-    // TODO: 实现 rpdice 逻辑
-    orginal_hir
+    fn double_count(count: &mut NumberType) {
+        let old_count_val = std::mem::replace(&mut *count, NumberType::Constant(0.0));
+        let new_count_val =
+            HIR::multiply_number(HIR::constant(2.0).except_number().unwrap(), old_count_val)
+                .except_number()
+                .unwrap();
+        *count = new_count_val;
+    }
+
+    struct RpDiceRewriter;
+    impl HirVisitor for RpDiceRewriter {
+        fn visit_dice_pool_self(&mut self, d: &mut DicePoolType) {
+            use DicePoolType::*;
+            match d {
+                Standard(count, _) | Fudge(count) | Coin(count) => {
+                    double_count(count);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    let mut hir_copy = orginal_hir;
+    let mut rewriter = RpDiceRewriter;
+    rewriter.visit_hir(&mut hir_copy);
+    hir_copy
 }
 
 // ==========================================
