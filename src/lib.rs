@@ -2,8 +2,11 @@
 //!
 //! This crate provides functionality for dice rolling and related utilities.
 
-pub mod grammar;
-pub mod types;
+pub(crate) mod grammar;
+pub mod lower;
+pub(crate) mod types;
+
+pub use crate::grammar::parse_dice;
 
 // // ==========================================
 // // 辅助类型定义

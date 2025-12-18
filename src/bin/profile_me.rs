@@ -1,5 +1,5 @@
 // src/bin/profile_me.rs
-use oxidice::grammar::parse_dice;
+use oxidice::parse_dice;
 use std::hint::black_box; // 替换为你的 crate 名字
 
 fn main() {

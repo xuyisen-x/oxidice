@@ -8,6 +8,7 @@ pub enum BinOp {
     Add,
     Sub,
     Mul,
+    ListMul,
     Div,
     Mod,
     Idiv,
