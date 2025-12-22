@@ -78,9 +78,9 @@ fn lower_list(elements: Vec<Expr>) -> Result<HIR, String> {
     let number_elements = elements
         .into_iter()
         .map(|e| {
-            let number_type = lower_expr(e)?
-                .except_number()
-                .map_err(|_| "List elements must be numbers".to_string())?;
+            let number_type = lower_expr(e)?.except_number().map_err(|_| {
+                "List elements must be numbers. Nested list is not allowed.".to_string()
+            })?;
             Ok(number_type)
         })
         .collect::<Result<Vec<_>, String>>()?;
@@ -174,7 +174,7 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
                 let list = exactly_one_list(args_hir)?;
                 Ok(HIR::floor_list(list))
             } else {
-                let list = trate_as_list(args_hir)?;
+                let list = treat_as_list(args_hir)?;
                 Ok(HIR::floor_list(list))
             }
         }
@@ -186,7 +186,7 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
                 let list = exactly_one_list(args_hir)?;
                 Ok(HIR::ceil_list(list))
             } else {
-                let list = trate_as_list(args_hir)?;
+                let list = treat_as_list(args_hir)?;
                 Ok(HIR::ceil_list(list))
             }
         }
@@ -198,7 +198,7 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
                 let list = exactly_one_list(args_hir)?;
                 Ok(HIR::round_list(list))
             } else {
-                let list = trate_as_list(args_hir)?;
+                let list = treat_as_list(args_hir)?;
                 Ok(HIR::round_list(list))
             }
         }
@@ -210,7 +210,7 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
                 let list = exactly_one_list(args_hir)?;
                 Ok(HIR::abs_list(list))
             } else {
-                let list = trate_as_list(args_hir)?;
+                let list = treat_as_list(args_hir)?;
                 Ok(HIR::abs_list(list))
             }
         }
@@ -222,7 +222,7 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
                 let list = exactly_one_list(args_hir)?;
                 Ok(HIR::max_number(list))
             } else {
-                let list = trate_as_list(args_hir)?;
+                let list = treat_as_list(args_hir)?;
                 Ok(HIR::max_number(list))
             }
         }
@@ -234,7 +234,7 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
                 let list = exactly_one_list(args_hir)?;
                 Ok(HIR::min_number(list))
             } else {
-                let list = trate_as_list(args_hir)?;
+                let list = treat_as_list(args_hir)?;
                 Ok(HIR::min_number(list))
             }
         }
@@ -242,7 +242,7 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
             let list = if is_exactly_one_list(&args_hir) {
                 exactly_one_list(args_hir)?
             } else {
-                trate_as_list(args_hir)?
+                treat_as_list(args_hir)?
             };
             Ok(HIR::sum(list))
         }
@@ -250,7 +250,7 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
             let list = if is_exactly_one_list(&args_hir) {
                 exactly_one_list(args_hir)?
             } else {
-                trate_as_list(args_hir)?
+                treat_as_list(args_hir)?
             };
             Ok(HIR::avg(list))
         }
@@ -258,7 +258,7 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
             let list = if is_exactly_one_list(&args_hir) {
                 exactly_one_list(args_hir)?
             } else {
-                trate_as_list(args_hir)?
+                treat_as_list(args_hir)?
             };
             Ok(HIR::len(list))
         }
@@ -266,7 +266,7 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
             let list = if is_exactly_one_list(&args_hir) {
                 exactly_one_list(args_hir)?
             } else {
-                trate_as_list(args_hir)?
+                treat_as_list(args_hir)?
             };
             Ok(HIR::sort_list(list))
         }
@@ -274,7 +274,7 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
             let list = if is_exactly_one_list(&args_hir) {
                 exactly_one_list(args_hir)?
             } else {
-                trate_as_list(args_hir)?
+                treat_as_list(args_hir)?
             };
             Ok(HIR::sort_desc_list(list))
         }
@@ -299,7 +299,7 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
             let list = if is_exactly_one_list(&args_hir) {
                 exactly_one_list(args_hir)?
             } else {
-                trate_as_list(args_hir)?
+                treat_as_list(args_hir)?
             };
             let compare_param = expr_mp_to_hir_mp(compare_expr)?;
             Ok(HIR::filter_list(list, compare_param))
@@ -310,7 +310,7 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
                 return Err("rpdice function requires exactly one argument".to_string());
             }
             let orginal_hir = args_hir.into_iter().next().unwrap();
-            Ok(rpdice(orginal_hir))
+            rpdice(orginal_hir)
         }
     }
 }
@@ -464,7 +464,7 @@ fn exactly_one_list_and_one_number(args: Vec<HIR>) -> Result<(ListType, NumberTy
     Ok((list, number))
 }
 
-fn trate_as_list(args: Vec<HIR>) -> Result<ListType, String> {
+fn treat_as_list(args: Vec<HIR>) -> Result<ListType, String> {
     // 尝试将所有参数都解释为数字，然后组成一个显式列表
     args.into_iter()
         .map(|hir| {
@@ -479,7 +479,7 @@ fn trate_as_list(args: Vec<HIR>) -> Result<ListType, String> {
 // RpDice 专用函数
 // ==========================================
 
-fn rpdice(orginal_hir: HIR) -> HIR {
+fn rpdice(orginal_hir: HIR) -> Result<HIR, String> {
     fn double_count(count: &mut NumberType) {
         let old_count_val = std::mem::replace(&mut *count, NumberType::Constant(0.0));
         let new_count_val =
@@ -491,7 +491,7 @@ fn rpdice(orginal_hir: HIR) -> HIR {
 
     struct RpDiceRewriter;
     impl HirVisitor for RpDiceRewriter {
-        fn visit_dice_pool_self(&mut self, d: &mut DicePoolType) {
+        fn visit_dice_pool_self(&mut self, d: &mut DicePoolType) -> Result<(), String> {
             use DicePoolType::*;
             match d {
                 Standard(count, _) | Fudge(count) | Coin(count) => {
@@ -499,13 +499,14 @@ fn rpdice(orginal_hir: HIR) -> HIR {
                 }
                 _ => {}
             }
+            Ok(())
         }
     }
 
     let mut hir_copy = orginal_hir;
     let mut rewriter = RpDiceRewriter;
-    rewriter.visit_hir(&mut hir_copy);
-    hir_copy
+    rewriter.visit_hir(&mut hir_copy)?;
+    Ok(hir_copy)
 }
 
 // ==========================================

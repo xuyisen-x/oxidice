@@ -8,16 +8,17 @@ pub trait HirVisitor {
     // ==========================================
     // 顶层入口 (HIR)
     // ==========================================
-    fn visit_hir(&mut self, h: &mut HIR) {
-        self.visit_hir_children(h);
-        self.visit_hir_self(h);
+    fn visit_hir(&mut self, h: &mut HIR) -> Result<(), String> {
+        self.visit_hir_children(h)?;
+        self.visit_hir_self(h)?;
+        Ok(())
     }
 
-    fn visit_hir_self(&mut self, _h: &mut HIR) {
-        // 默认为空，用户在此处覆盖逻辑
+    fn visit_hir_self(&mut self, _h: &mut HIR) -> Result<(), String> {
+        Ok(())
     }
 
-    fn visit_hir_children(&mut self, h: &mut HIR) {
+    fn visit_hir_children(&mut self, h: &mut HIR) -> Result<(), String> {
         match h {
             HIR::Number(n) => self.visit_number(n),
             HIR::List(l) => self.visit_list(l),
@@ -27,17 +28,20 @@ pub trait HirVisitor {
     // ==========================================
     // NumberType
     // ==========================================
-    fn visit_number(&mut self, n: &mut NumberType) {
-        self.visit_number_children(n);
-        self.visit_number_self(n);
+    fn visit_number(&mut self, n: &mut NumberType) -> Result<(), String> {
+        self.visit_number_children(n)?;
+        self.visit_number_self(n)?;
+        Ok(())
     }
 
-    fn visit_number_self(&mut self, _n: &mut NumberType) {}
+    fn visit_number_self(&mut self, _n: &mut NumberType) -> Result<(), String> {
+        Ok(())
+    }
 
-    fn visit_number_children(&mut self, n: &mut NumberType) {
+    fn visit_number_children(&mut self, n: &mut NumberType) -> Result<(), String> {
         use NumberType::*;
         match n {
-            Constant(_) => {} // 叶子节点，无需递归
+            Constant(_) => Ok(()), // 叶子节点，无需递归
             DicePool(d) => self.visit_dice_pool(d),
             SuccessPool(s) => self.visit_success_pool(s),
             NumberBinary(b) => self.visit_number_binary(b),
@@ -50,19 +54,23 @@ pub trait HirVisitor {
     // ==========================================
     // DicePoolType
     // ==========================================
-    fn visit_dice_pool(&mut self, d: &mut DicePoolType) {
-        self.visit_dice_pool_children(d);
-        self.visit_dice_pool_self(d);
+    fn visit_dice_pool(&mut self, d: &mut DicePoolType) -> Result<(), String> {
+        self.visit_dice_pool_children(d)?;
+        self.visit_dice_pool_self(d)?;
+        Ok(())
     }
 
-    fn visit_dice_pool_self(&mut self, _d: &mut DicePoolType) {}
+    fn visit_dice_pool_self(&mut self, _d: &mut DicePoolType) -> Result<(), String> {
+        Ok(())
+    }
 
-    fn visit_dice_pool_children(&mut self, d: &mut DicePoolType) {
+    fn visit_dice_pool_children(&mut self, d: &mut DicePoolType) -> Result<(), String> {
         use DicePoolType::*;
         match d {
             Standard(x, y) => {
-                self.visit_number(x);
-                self.visit_number(y);
+                self.visit_number(x)?;
+                self.visit_number(y)?;
+                Ok(())
             }
             Fudge(x) => self.visit_number(x),
             Coin(x) => self.visit_number(x),
@@ -72,29 +80,33 @@ pub trait HirVisitor {
             | DropLow(d, n)
             | Min(d, n)
             | Max(d, n) => {
-                self.visit_dice_pool(d);
-                self.visit_number(n);
+                self.visit_dice_pool(d)?;
+                self.visit_number(n)?;
+                Ok(())
             }
             // 处理 Option 类型
             Explode(d, mp, lim) | CompoundExplode(d, mp, lim) => {
-                self.visit_dice_pool(d);
+                self.visit_dice_pool(d)?;
                 if let Some(m) = mp {
-                    self.visit_mod_param(m);
+                    self.visit_mod_param(m)?;
                 }
                 if let Some(l) = lim {
-                    self.visit_limit(l);
+                    self.visit_limit(l)?;
                 }
+                Ok(())
             }
             Reroll(d, mp, lim) => {
-                self.visit_dice_pool(d);
-                self.visit_mod_param(mp);
+                self.visit_dice_pool(d)?;
+                self.visit_mod_param(mp)?;
                 if let Some(l) = lim {
-                    self.visit_limit(l);
+                    self.visit_limit(l)?;
                 }
+                Ok(())
             }
             SubtractFailures(d, mp) => {
-                self.visit_dice_pool(d);
-                self.visit_mod_param(mp);
+                self.visit_dice_pool(d)?;
+                self.visit_mod_param(mp)?;
+                Ok(())
             }
         }
     }
@@ -102,23 +114,28 @@ pub trait HirVisitor {
     // ==========================================
     // SuccessPoolType
     // ==========================================
-    fn visit_success_pool(&mut self, s: &mut SuccessPoolType) {
-        self.visit_success_pool_children(s);
-        self.visit_success_pool_self(s);
+    fn visit_success_pool(&mut self, s: &mut SuccessPoolType) -> Result<(), String> {
+        self.visit_success_pool_children(s)?;
+        self.visit_success_pool_self(s)?;
+        Ok(())
     }
 
-    fn visit_success_pool_self(&mut self, _s: &mut SuccessPoolType) {}
+    fn visit_success_pool_self(&mut self, _s: &mut SuccessPoolType) -> Result<(), String> {
+        Ok(())
+    }
 
-    fn visit_success_pool_children(&mut self, s: &mut SuccessPoolType) {
+    fn visit_success_pool_children(&mut self, s: &mut SuccessPoolType) -> Result<(), String> {
         use SuccessPoolType::*;
         match s {
             CountSuccessesFromDicePool(d, mp) | DeductFailuresFromDicePool(d, mp) => {
-                self.visit_dice_pool(d);
-                self.visit_mod_param(mp);
+                self.visit_dice_pool(d)?;
+                self.visit_mod_param(mp)?;
+                Ok(())
             }
             CountSuccesses(sp, mp) | DeductFailures(sp, mp) => {
-                self.visit_success_pool(sp);
-                self.visit_mod_param(mp);
+                self.visit_success_pool(sp)?;
+                self.visit_mod_param(mp)?;
+                Ok(())
             }
         }
     }
@@ -126,14 +143,17 @@ pub trait HirVisitor {
     // ==========================================
     // NumberBinaryType
     // ==========================================
-    fn visit_number_binary(&mut self, nb: &mut NumberBinaryType) {
-        self.visit_number_binary_children(nb);
-        self.visit_number_binary_self(nb);
+    fn visit_number_binary(&mut self, nb: &mut NumberBinaryType) -> Result<(), String> {
+        self.visit_number_binary_children(nb)?;
+        self.visit_number_binary_self(nb)?;
+        Ok(())
     }
 
-    fn visit_number_binary_self(&mut self, _nb: &mut NumberBinaryType) {}
+    fn visit_number_binary_self(&mut self, _nb: &mut NumberBinaryType) -> Result<(), String> {
+        Ok(())
+    }
 
-    fn visit_number_binary_children(&mut self, nb: &mut NumberBinaryType) {
+    fn visit_number_binary_children(&mut self, nb: &mut NumberBinaryType) -> Result<(), String> {
         use NumberBinaryType::*;
         match nb {
             Add(l, r)
@@ -142,8 +162,9 @@ pub trait HirVisitor {
             | Divide(l, r)
             | IntDivide(l, r)
             | Modulo(l, r) => {
-                self.visit_number(l);
-                self.visit_number(r);
+                self.visit_number(l)?;
+                self.visit_number(r)?;
+                Ok(())
             }
         }
     }
@@ -151,14 +172,20 @@ pub trait HirVisitor {
     // ==========================================
     // NumberFunctionType
     // ==========================================
-    fn visit_number_function(&mut self, nf: &mut NumberFunctionType) {
-        self.visit_number_function_children(nf);
-        self.visit_number_function_self(nf);
+    fn visit_number_function(&mut self, nf: &mut NumberFunctionType) -> Result<(), String> {
+        self.visit_number_function_children(nf)?;
+        self.visit_number_function_self(nf)?;
+        Ok(())
     }
 
-    fn visit_number_function_self(&mut self, _nf: &mut NumberFunctionType) {}
+    fn visit_number_function_self(&mut self, _nf: &mut NumberFunctionType) -> Result<(), String> {
+        Ok(())
+    }
 
-    fn visit_number_function_children(&mut self, nf: &mut NumberFunctionType) {
+    fn visit_number_function_children(
+        &mut self,
+        nf: &mut NumberFunctionType,
+    ) -> Result<(), String> {
         use NumberFunctionType::*;
         match nf {
             Floor(n) | Ceil(n) | Round(n) | Abs(n) => self.visit_number(n),
@@ -170,21 +197,25 @@ pub trait HirVisitor {
     // ==========================================
     // ListType
     // ==========================================
-    fn visit_list(&mut self, l: &mut ListType) {
-        self.visit_list_children(l);
-        self.visit_list_self(l);
+    fn visit_list(&mut self, l: &mut ListType) -> Result<(), String> {
+        self.visit_list_children(l)?;
+        self.visit_list_self(l)?;
+        Ok(())
     }
 
-    fn visit_list_self(&mut self, _l: &mut ListType) {}
+    fn visit_list_self(&mut self, _l: &mut ListType) -> Result<(), String> {
+        Ok(())
+    }
 
-    fn visit_list_children(&mut self, l: &mut ListType) {
+    fn visit_list_children(&mut self, l: &mut ListType) -> Result<(), String> {
         use ListType::*;
         match l {
             Explicit(vec) => {
                 // 使用 iter_mut 遍历 Vec
                 for n in vec.iter_mut() {
-                    self.visit_number(n);
+                    self.visit_number(n)?;
                 }
+                Ok(())
             }
             ListFunction(lf) => self.visit_list_function(lf),
             ListBinary(lb) => self.visit_list_binary(lb),
@@ -194,19 +225,23 @@ pub trait HirVisitor {
     // ==========================================
     // ListBinaryType
     // ==========================================
-    fn visit_list_binary(&mut self, lb: &mut ListBinaryType) {
-        self.visit_list_binary_children(lb);
-        self.visit_list_binary_self(lb);
+    fn visit_list_binary(&mut self, lb: &mut ListBinaryType) -> Result<(), String> {
+        self.visit_list_binary_children(lb)?;
+        self.visit_list_binary_self(lb)?;
+        Ok(())
     }
 
-    fn visit_list_binary_self(&mut self, _lb: &mut ListBinaryType) {}
+    fn visit_list_binary_self(&mut self, _lb: &mut ListBinaryType) -> Result<(), String> {
+        Ok(())
+    }
 
-    fn visit_list_binary_children(&mut self, lb: &mut ListBinaryType) {
+    fn visit_list_binary_children(&mut self, lb: &mut ListBinaryType) -> Result<(), String> {
         use ListBinaryType::*;
         match lb {
             AddList(l1, l2) => {
-                self.visit_list(l1);
-                self.visit_list(l2);
+                self.visit_list(l1)?;
+                self.visit_list(l2)?;
+                Ok(())
             }
             MultiplyList(l, n)
             | Add(l, n)
@@ -215,15 +250,17 @@ pub trait HirVisitor {
             | Divide(l, n)
             | IntDivide(l, n)
             | Modulo(l, n) => {
-                self.visit_list(l);
-                self.visit_number(n);
+                self.visit_list(l)?;
+                self.visit_number(n)?;
+                Ok(())
             }
             SubtractReverse(n, l)
             | DivideReverse(n, l)
             | IntDivideReverse(n, l)
             | ModuloReverse(n, l) => {
-                self.visit_number(n);
-                self.visit_list(l);
+                self.visit_number(n)?;
+                self.visit_list(l)?;
+                Ok(())
             }
         }
     }
@@ -231,28 +268,34 @@ pub trait HirVisitor {
     // ==========================================
     // ListFunctionType
     // ==========================================
-    fn visit_list_function(&mut self, lf: &mut ListFunctionType) {
-        self.visit_list_function_children(lf);
-        self.visit_list_function_self(lf);
+    fn visit_list_function(&mut self, lf: &mut ListFunctionType) -> Result<(), String> {
+        self.visit_list_function_children(lf)?;
+        self.visit_list_function_self(lf)?;
+        Ok(())
     }
 
-    fn visit_list_function_self(&mut self, _lf: &mut ListFunctionType) {}
+    fn visit_list_function_self(&mut self, _lf: &mut ListFunctionType) -> Result<(), String> {
+        Ok(())
+    }
 
-    fn visit_list_function_children(&mut self, lf: &mut ListFunctionType) {
+    fn visit_list_function_children(&mut self, lf: &mut ListFunctionType) -> Result<(), String> {
         use ListFunctionType::*;
         match lf {
             Floor(l) | Ceil(l) | Round(l) | Abs(l) | Sort(l) | SortDesc(l) => {
-                self.visit_list(l);
+                self.visit_list(l)?;
+                Ok(())
             }
             Max(l, n) | Min(l, n) => {
-                self.visit_list(l);
-                self.visit_number(n);
+                self.visit_list(l)?;
+                self.visit_number(n)?;
+                Ok(())
             }
             ToListFromDicePool(d) => self.visit_dice_pool(d),
             ToListFromSuccessPool(s) => self.visit_success_pool(s),
             Filter(l, mp) => {
-                self.visit_list(l);
-                self.visit_mod_param(mp);
+                self.visit_list(l)?;
+                self.visit_mod_param(mp)?;
+                Ok(())
             }
         }
     }
@@ -261,17 +304,19 @@ pub trait HirVisitor {
     // 辅助结构 (ModParam, Limit)
     // ==========================================
 
-    fn visit_mod_param(&mut self, mp: &mut ModParam) {
+    fn visit_mod_param(&mut self, mp: &mut ModParam) -> Result<(), String> {
         // mp.value 是 Box<NumberType>
-        self.visit_number(&mut mp.value);
+        self.visit_number(&mut mp.value)?;
+        Ok(())
     }
 
-    fn visit_limit(&mut self, lim: &mut Limit) {
+    fn visit_limit(&mut self, lim: &mut Limit) -> Result<(), String> {
         if let Some(n) = &mut lim.limit_times {
-            self.visit_number(n);
+            self.visit_number(n)?;
         }
         if let Some(n) = &mut lim.limit_counts {
-            self.visit_number(n);
+            self.visit_number(n)?;
         }
+        Ok(())
     }
 }

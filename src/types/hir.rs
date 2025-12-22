@@ -524,6 +524,46 @@ impl HIR {
     }
 }
 
+impl NumberType {
+    pub fn is_constant(&self) -> bool {
+        matches!(self, NumberType::Constant(_))
+    }
+}
+
+impl ListType {
+    pub fn is_explicit(&self) -> bool {
+        matches!(self, ListType::Explicit(_))
+    }
+
+    pub fn is_constant_list(&self) -> bool {
+        match self {
+            ListType::Explicit(elements) => elements.iter().all(|e| e.is_constant()),
+            _ => false,
+        }
+    }
+}
+
+impl ModParam {
+    pub fn is_constant(&self) -> bool {
+        self.value.is_constant()
+    }
+
+    pub fn get_compare_function(&self) -> Option<Box<dyn Fn(f64) -> bool>> {
+        let target_value = match *self.value {
+            NumberType::Constant(v) => v,
+            _ => return None,
+        };
+        match self.operator {
+            CompareOp::Equal => Some(Box::new(move |x: f64| x == target_value)),
+            CompareOp::NotEqual => Some(Box::new(move |x: f64| x != target_value)),
+            CompareOp::Less => Some(Box::new(move |x: f64| x < target_value)),
+            CompareOp::LessEqual => Some(Box::new(move |x: f64| x <= target_value)),
+            CompareOp::Greater => Some(Box::new(move |x: f64| x > target_value)),
+            CompareOp::GreaterEqual => Some(Box::new(move |x: f64| x >= target_value)),
+        }
+    }
+}
+
 // ==========================================
 // 类型检查函数定义
 // ==========================================
