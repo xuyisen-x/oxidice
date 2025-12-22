@@ -17,9 +17,9 @@ winnow = "0.7.14"
 criterion = "0.5"
 
 [profile.release]
-lto = true
+lto = "fat"
 opt-level = 'z'    # 优化代码体积
-# codegen-units = 1 # 启用单一代码生成单元以提高优化效果
+codegen-units = 1 # 启用单一代码生成单元以提高优化效果
 panic = 'abort'    # 发生错误直接崩溃，不回溯堆栈
 
 [profile.bench]

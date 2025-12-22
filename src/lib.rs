@@ -14,6 +14,10 @@ use wasm_bindgen::prelude::*;
 pub use crate::grammar::parse_dice;
 use crate::optimizer::constant_fold::constant_fold_hir;
 
+// ==========================================
+// main.rs 专供函数
+// ==========================================
+
 pub fn parse_dice_and_show(input: &str) -> Result<String, String> {
     let ast = grammar::parse_dice(input)?;
     let hir = lower::lower_expr(ast)?;
@@ -21,9 +25,9 @@ pub fn parse_dice_and_show(input: &str) -> Result<String, String> {
     Ok(format!("{}", hir))
 }
 
-// // ==========================================
-// // 辅助类型定义
-// // ==========================================
+// ==========================================
+// 辅助类型定义
+// ==========================================
 
 // 用于检查常量是否是常量整数的结果类型，用于check_constant_integer函数
 #[derive(Tsify, Serialize, Deserialize)]
@@ -43,9 +47,9 @@ pub enum FoldedDiceExpression {
     Invalid(String),
 }
 
-// // ==========================================
-// // 相关函数定义
-// // ==========================================
+// ==========================================
+// 相关函数定义
+// ==========================================
 
 //检查输入的表达式是否为常量整数
 #[wasm_bindgen]
