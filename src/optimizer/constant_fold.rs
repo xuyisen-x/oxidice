@@ -136,14 +136,14 @@ fn fold_list_function(func: &mut ListFunctionType) -> Option<ListType> {
         }
         Sort(list_box) if list_box.is_constant_list() => {
             let mut values = try_get_constant_values(list_box)?;
-            values.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            values.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
             Some(ListType::Explicit(
                 values.into_iter().map(NumberType::Constant).collect(),
             ))
         }
         SortDesc(list_box) if list_box.is_constant_list() => {
             let mut values = try_get_constant_values(list_box)?;
-            values.sort_by(|a, b| b.partial_cmp(a).unwrap());
+            values.sort_by(|a, b| b.partial_cmp(a).unwrap_or(std::cmp::Ordering::Equal));
             Some(ListType::Explicit(
                 values.into_iter().map(NumberType::Constant).collect(),
             ))
@@ -320,46 +320,71 @@ fn fold_dice_pool(dice_pool: &mut DicePoolType) -> Option<NumberType> {
             }
             let new_count = if count_box.is_constant() {
                 let count = try_get_constant_value(&count_box)?; // 一定成功
-                let count = (count as i64) as f64; // 模拟转化为整数的截断
-                if count > 0.0 {
-                    Box::new(NumberType::Constant(count))
-                } else {
+                let new_count = (count as i64) as f64; // 模拟转化为整数的截断
+                if new_count <= 0.0 {
                     return Some(NumberType::Constant(0.0));
+                } else if count != new_count {
+                    Some(new_count)
+                } else {
+                    None
                 }
             } else {
-                std::mem::replace(count_box, Box::new(NumberType::Constant(0.0)))
+                None
             };
             let new_side = if side_box.is_constant() {
                 let side = try_get_constant_value(&side_box)?; // 一定成功
-                let side = (side as i64) as f64; // 模拟转化为整数的截断
-                if side >= 1.0 {
-                    Box::new(NumberType::Constant(side))
-                } else {
+                let new_side = (side as i64) as f64; // 模拟转化为整数的截断
+                if new_side <= 0.0 {
                     return Some(NumberType::Constant(0.0));
+                } else if side != new_side {
+                    Some(new_side)
+                } else {
+                    None
                 }
+            } else {
+                None
+            };
+            if new_count.is_none() && new_side.is_none() {
+                return None; // 没有变化，不需要处理
+            }
+            let new_count_box = if let Some(nc) = new_count {
+                Box::new(NumberType::Constant(nc))
+            } else {
+                std::mem::replace(count_box, Box::new(NumberType::Constant(0.0)))
+            };
+            let new_side_box = if let Some(ns) = new_side {
+                Box::new(NumberType::Constant(ns))
             } else {
                 std::mem::replace(side_box, Box::new(NumberType::Constant(0.0)))
             };
-            Some(NumberType::DicePool(Standard(new_count, new_side)))
+            Some(NumberType::DicePool(Standard(new_count_box, new_side_box)))
         }
         Fudge(count_box) if count_box.is_constant() => {
             let count = try_get_constant_value(&count_box)?; // 一定成功
-            let count = (count as i64) as f64; // 模拟转化为整数的截断
-            if count > 0.0 {
-                Some(NumberType::DicePool(Fudge(Box::new(NumberType::Constant(
-                    count,
-                )))))
+            let new_count = (count as i64) as f64; // 模拟转化为整数的截断
+            if new_count > 0.0 {
+                if new_count == count {
+                    None // 没有变化，保持不变
+                } else {
+                    Some(NumberType::DicePool(Fudge(Box::new(NumberType::Constant(
+                        new_count,
+                    )))))
+                }
             } else {
                 Some(NumberType::Constant(0.0))
             }
         }
         Coin(count_box) if count_box.is_constant() => {
             let count = try_get_constant_value(&count_box)?; // 一定成功
-            let count = (count as i64) as f64; // 模拟转化为整数的截断
-            if count > 0.0 {
-                Some(NumberType::DicePool(Coin(Box::new(NumberType::Constant(
-                    count,
-                )))))
+            let new_count = (count as i64) as f64; // 模拟转化为整数的截断
+            if new_count > 0.0 {
+                if count == new_count {
+                    None // 没有变化，保持不变
+                } else {
+                    Some(NumberType::DicePool(Coin(Box::new(NumberType::Constant(
+                        new_count,
+                    )))))
+                }
             } else {
                 Some(NumberType::Constant(0.0))
             }
