@@ -10,9 +10,9 @@ use std::fmt;
 enum Precedence {
     Sum = 10,     // 加法、减法
     Product = 20, // 乘法、除法、取模
-    Dice = 30,    // 骰子运算 (d, kh, !, etc.) 通常结合得很紧密
+    Dice = 30,    // 骰子运算 (d, kh, !, etc.)
     Prefix = 40,  // 单目运算符 (Neg)
-    Call = 50,    // 函数调用、原子值 (数字、列表字面量)
+    Call = 50,    // 函数调用、原子值
 }
 
 // ==========================================
@@ -33,12 +33,11 @@ impl fmt::Display for HIR {
 // ==========================================
 
 impl NumberType {
-    // 获取当前节点的优先级
     fn precedence(&self) -> Precedence {
         match self {
             NumberType::Constant(_) => Precedence::Call,
             NumberType::DicePool(_) => Precedence::Dice,
-            NumberType::SuccessPool(_) => Precedence::Dice, // 成功池类似骰子池
+            NumberType::SuccessPool(_) => Precedence::Dice,
             NumberType::NumberFunction(_) => Precedence::Call,
             NumberType::Neg(_) => Precedence::Prefix,
             NumberType::NumberBinary(op) => match op {
@@ -60,7 +59,6 @@ impl fmt::Display for NumberType {
             NumberType::SuccessPool(s) => write!(f, "{}", s),
             NumberType::NumberFunction(func) => write!(f, "{}", func),
             NumberType::Neg(inner) => {
-                // 如果内部优先级低于前缀运算，加括号: -(1+2)
                 if inner.precedence() < Precedence::Prefix {
                     write!(f, "-({})", inner)
                 } else {
@@ -78,23 +76,21 @@ impl fmt::Display for NumberType {
                     NumberBinaryType::Modulo(l, r) => (l, "%", r),
                 };
 
-                // 左侧：如果左子节点优先级 < 当前优先级，加括号
+                // 左侧：如果优先级低于当前，加括号
                 if lhs.precedence() < prec {
                     write!(f, "({})", lhs)?;
                 } else {
                     write!(f, "{}", lhs)?;
                 }
 
-                write!(f, " {} ", symbol)?;
+                write!(f, "{}", symbol)?;
 
-                // 右侧：处理结合律
-                // 对于 -, /, //, % 这种非交换律运算，或者左结合运算，
-                // 如果右侧优先级 == 当前优先级，必须加括号。例如: 1 - (2 - 3)
-                // 加法乘法虽然满足交换律，但为了保持 AST 结构一致，通常也遵循左结合
+                // 右侧：处理左结合律 (Left Associative)
+                // 如果右侧优先级低于 OR 等于当前(例如 1-2-3 -> (1-2)-3，右侧是3，不需要括号；
+                // 但如果是 1-(2-3)，右侧是减法，需要括号)。
+                // 注意：这里假设同级运算如果不加括号，解析器默认向左结合。
+                // 所以如果右侧是同级运算，为了保持AST意图（它作为右子树），必须加括号。
                 if rhs.precedence() < prec || (rhs.precedence() == prec) {
-                    // 注意：这里假设所有二元运算都是左结合的
-                    // 如果 rhs 优先级相同，意味着它可能是同级运算，放在右边需要括号
-                    // e.g. self is Div, rhs is Div -> a / (b / c)
                     write!(f, "({})", rhs)
                 } else {
                     write!(f, "{}", rhs)
@@ -108,41 +104,39 @@ impl fmt::Display for NumberType {
 // DicePoolType 实现
 // ==========================================
 
-// 骰子池通常是从左向右构建的链式修饰符，例如 3d6kh2!
-// 基础部分是 Standard/Fudge/Coin，其他都是修饰符
 impl fmt::Display for DicePoolType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             DicePoolType::Standard(count, sides) => {
-                // 检查 count 是否需要括号 (比如 (1+2)d6)
-                if count.precedence() < Precedence::Dice {
+                // 如果 count 本身是 Dice (如 1d20)，必须变成 (1d20)d6
+                if count.precedence() <= Precedence::Dice {
                     write!(f, "({})", count)?;
                 } else {
                     write!(f, "{}", count)?;
                 }
                 write!(f, "d")?;
-                // 检查 sides 是否需要括号
-                if sides.precedence() < Precedence::Dice {
+                // 同样处理右侧，虽然少见，但支持 1d(1d6)
+                if sides.precedence() <= Precedence::Dice {
                     write!(f, "({})", sides)
                 } else {
                     write!(f, "{}", sides)
                 }
             }
             DicePoolType::Fudge(count) => {
-                if count.precedence() < Precedence::Dice {
+                if count.precedence() <= Precedence::Dice {
                     write!(f, "({})dF", count)
                 } else {
                     write!(f, "{}dF", count)
                 }
             }
             DicePoolType::Coin(count) => {
-                if count.precedence() < Precedence::Dice {
+                if count.precedence() <= Precedence::Dice {
                     write!(f, "({})dC", count)
                 } else {
                     write!(f, "{}dC", count)
                 }
             }
-            // 递归处理修饰符，不需要加括号，因为骰子修饰符紧跟在后面
+            // 修饰符紧凑连接
             DicePoolType::KeepHigh(inner, n) => write!(f, "{}kh{}", inner, n),
             DicePoolType::KeepLow(inner, n) => write!(f, "{}kl{}", inner, n),
             DicePoolType::DropHigh(inner, n) => write!(f, "{}dh{}", inner, n),
@@ -190,7 +184,6 @@ impl fmt::Display for SuccessPoolType {
         match self {
             SuccessPoolType::CountSuccessesFromDicePool(dp, mp) => write!(f, "{}cs{}", dp, mp),
             SuccessPoolType::DeductFailuresFromDicePool(dp, mp) => write!(f, "{}df{}", dp, mp),
-            // SuccessPool 也可以链式调用
             SuccessPoolType::CountSuccesses(inner, mp) => write!(f, "{}cs{}", inner, mp),
             SuccessPoolType::DeductFailures(inner, mp) => write!(f, "{}df{}", inner, mp),
         }
@@ -204,14 +197,19 @@ impl fmt::Display for SuccessPoolType {
 impl ListType {
     fn precedence(&self) -> Precedence {
         match self {
+            // 显式列表和函数调用被视为最高优先级（原子级），不需要括号
             ListType::Explicit(_) => Precedence::Call,
             ListType::ListFunction(_) => Precedence::Call,
+
             ListType::ListBinary(op) => match op {
+                // 加减法归为 Sum
                 ListBinaryType::AddList(_, _)
                 | ListBinaryType::Add(_, _)
                 | ListBinaryType::Subtract(_, _)
                 | ListBinaryType::SubtractReverse(_, _) => Precedence::Sum,
-                _ => Precedence::Product, // 其他大部分是乘除类或广播
+
+                // 其他归为 Product (乘除、取模、指数)
+                _ => Precedence::Product,
             },
         }
     }
@@ -224,7 +222,7 @@ impl fmt::Display for ListType {
                 write!(f, "[")?;
                 for (i, item) in vec.iter().enumerate() {
                     if i > 0 {
-                        write!(f, ", ")?;
+                        write!(f, ",")?;
                     }
                     write!(f, "{}", item)?;
                 }
@@ -232,111 +230,85 @@ impl fmt::Display for ListType {
             }
             ListType::ListFunction(func) => write!(f, "{}", func),
             ListType::ListBinary(op) => {
-                let prec = self.precedence();
-                // 辅助闭包：处理 NumberType 和 ListType 混合时的括号逻辑
-                // is_right: 是否是右操作数 (处理结合律)
-                let fmt_num = |f: &mut fmt::Formatter, n: &NumberType, is_right: bool| {
-                    if n.precedence() < prec || (is_right && n.precedence() == prec) {
-                        write!(f, "({})", n)
+                let self_prec = self.precedence();
+                let fmt_child = |f: &mut fmt::Formatter,
+                                 child_prec: Precedence,
+                                 child_disp: &dyn fmt::Display|
+                 -> fmt::Result {
+                    if child_prec <= self_prec {
+                        write!(f, "({})", child_disp)
                     } else {
-                        write!(f, "{}", n)
-                    }
-                };
-                let fmt_list = |f: &mut fmt::Formatter, l: &ListType, is_right: bool| {
-                    if l.precedence() < prec || (is_right && l.precedence() == prec) {
-                        write!(f, "({})", l)
-                    } else {
-                        write!(f, "{}", l)
+                        write!(f, "{}", child_disp)
                     }
                 };
 
+                // 分解操作符，分别处理 List 和 Number 类型的子节点
                 match op {
+                    // --- List op List ---
                     ListBinaryType::AddList(l, r) => {
-                        write!(f, "(")?;
-                        fmt_list(f, l, false)?;
-                        write!(f, " + ")?;
-                        fmt_list(f, r, true)?;
-                        write!(f, ")")
+                        fmt_child(f, l.precedence(), l)?;
+                        write!(f, "+")?;
+                        fmt_child(f, r.precedence(), r)
                     }
+
+                    // --- List op Number (广播) ---
                     ListBinaryType::MultiplyList(l, n) => {
-                        write!(f, "(")?;
-                        fmt_list(f, l, false)?;
-                        write!(f, " ** ")?;
-                        fmt_num(f, n, true)?;
-                        write!(f, ")")
+                        // List ** Number
+                        fmt_child(f, l.precedence(), l)?;
+                        write!(f, "**")?;
+                        fmt_child(f, n.precedence(), n)
                     }
-                    // 广播操作
                     ListBinaryType::Add(l, n) => {
-                        write!(f, "(")?;
-                        fmt_list(f, l, false)?;
-                        write!(f, " + ")?;
-                        fmt_num(f, n, true)?;
-                        write!(f, ")")
+                        fmt_child(f, l.precedence(), l)?;
+                        write!(f, "+")?;
+                        fmt_child(f, n.precedence(), n)
                     }
                     ListBinaryType::Multiply(l, n) => {
-                        write!(f, "(")?;
-                        fmt_list(f, l, false)?;
-                        write!(f, " * ")?;
-                        fmt_num(f, n, true)?;
-                        write!(f, ")")
+                        fmt_child(f, l.precedence(), l)?;
+                        write!(f, "*")?;
+                        fmt_child(f, n.precedence(), n)
                     }
                     ListBinaryType::Subtract(l, n) => {
-                        write!(f, "(")?;
-                        fmt_list(f, l, false)?;
-                        write!(f, " - ")?;
-                        fmt_num(f, n, true)?;
-                        write!(f, ")")
+                        fmt_child(f, l.precedence(), l)?;
+                        write!(f, "-")?;
+                        fmt_child(f, n.precedence(), n)
                     }
                     ListBinaryType::Divide(l, n) => {
-                        write!(f, "(")?;
-                        fmt_list(f, l, false)?;
-                        write!(f, " / ")?;
-                        fmt_num(f, n, true)?;
-                        write!(f, ")")
+                        fmt_child(f, l.precedence(), l)?;
+                        write!(f, "/")?;
+                        fmt_child(f, n.precedence(), n)
                     }
                     ListBinaryType::IntDivide(l, n) => {
-                        write!(f, "(")?;
-                        fmt_list(f, l, false)?;
-                        write!(f, " // ")?;
-                        fmt_num(f, n, true)?;
-                        write!(f, ")")
+                        fmt_child(f, l.precedence(), l)?;
+                        write!(f, "//")?;
+                        fmt_child(f, n.precedence(), n)
                     }
                     ListBinaryType::Modulo(l, n) => {
-                        write!(f, "(")?;
-                        fmt_list(f, l, false)?;
-                        write!(f, " % ")?;
-                        fmt_num(f, n, true)?;
-                        write!(f, ")")
+                        fmt_child(f, l.precedence(), l)?;
+                        write!(f, "%")?;
+                        fmt_child(f, n.precedence(), n)
                     }
 
-                    // 反向操作 (Num op List)
+                    // --- Number op List (反向广播) ---
                     ListBinaryType::SubtractReverse(n, l) => {
-                        write!(f, "(")?;
-                        fmt_num(f, n, false)?;
-                        write!(f, " - ")?;
-                        fmt_list(f, l, true)?;
-                        write!(f, ")")
+                        fmt_child(f, n.precedence(), n)?;
+                        write!(f, "-")?;
+                        fmt_child(f, l.precedence(), l)
                     }
                     ListBinaryType::DivideReverse(n, l) => {
-                        write!(f, "(")?;
-                        fmt_num(f, n, false)?;
-                        write!(f, " / ")?;
-                        fmt_list(f, l, true)?;
-                        write!(f, ")")
+                        fmt_child(f, n.precedence(), n)?;
+                        write!(f, "/")?;
+                        fmt_child(f, l.precedence(), l)
                     }
                     ListBinaryType::IntDivideReverse(n, l) => {
-                        write!(f, "(")?;
-                        fmt_num(f, n, false)?;
-                        write!(f, " // ")?;
-                        fmt_list(f, l, true)?;
-                        write!(f, ")")
+                        fmt_child(f, n.precedence(), n)?;
+                        write!(f, "//")?;
+                        fmt_child(f, l.precedence(), l)
                     }
                     ListBinaryType::ModuloReverse(n, l) => {
-                        write!(f, "(")?;
-                        fmt_num(f, n, false)?;
-                        write!(f, " % ")?;
-                        fmt_list(f, l, true)?;
-                        write!(f, ")")
+                        fmt_child(f, n.precedence(), n)?;
+                        write!(f, "%")?;
+                        fmt_child(f, l.precedence(), l)
                     }
                 }
             }
@@ -350,6 +322,7 @@ impl fmt::Display for ListType {
 
 impl fmt::Display for NumberFunctionType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // 函数参数间移除空格
         match self {
             NumberFunctionType::Floor(n) => write!(f, "floor({})", n),
             NumberFunctionType::Ceil(n) => write!(f, "ceil({})", n),
@@ -366,18 +339,30 @@ impl fmt::Display for NumberFunctionType {
 
 impl fmt::Display for ListFunctionType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // 函数参数间移除空格
         match self {
             ListFunctionType::Floor(l) => write!(f, "floor({})", l),
             ListFunctionType::Ceil(l) => write!(f, "ceil({})", l),
             ListFunctionType::Round(l) => write!(f, "round({})", l),
             ListFunctionType::Abs(l) => write!(f, "abs({})", l),
-            ListFunctionType::Max(l, n) => write!(f, "max({}, {})", l, n),
-            ListFunctionType::Min(l, n) => write!(f, "min({}, {})", l, n),
+            ListFunctionType::Max(l, n) => write!(f, "max({},{})", l, n),
+            ListFunctionType::Min(l, n) => write!(f, "min({},{})", l, n),
             ListFunctionType::Sort(l) => write!(f, "sort({})", l),
             ListFunctionType::SortDesc(l) => write!(f, "sortd({})", l),
             ListFunctionType::ToListFromDicePool(d) => write!(f, "tolist({})", d),
             ListFunctionType::ToListFromSuccessPool(s) => write!(f, "tolist({})", s),
-            ListFunctionType::Filter(l, mp) => write!(f, "filter({}, {})", l, mp),
+            ListFunctionType::Filter(l, mp) => {
+                let ModParam {
+                    operator: op,
+                    value: v,
+                } = mp;
+                let mp_str = if v.is_constant() {
+                    format!("{}{}", op, v)
+                } else {
+                    format!("{}({})", op, v)
+                };
+                write!(f, "filter{}({})", mp_str, l)
+            }
         }
     }
 }
@@ -386,7 +371,6 @@ impl fmt::Display for ListFunctionType {
 // 辅助类型实现
 // ==========================================
 
-// 需要手动实现 CompareOp 的 Display，或者从 Expr 引入
 impl fmt::Display for CompareOp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
@@ -409,14 +393,10 @@ impl fmt::Display for ModParam {
 
 impl fmt::Display for Limit {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // 假设 Limit 格式是 [times] 或者 [times, counts] ?
-        // 根据你的HIR定义，Limit 好像是用在 explode 里的，比如 !>5[3]
-        // 这里只是示意，格式取决于你的语法设计
         if let Some(times) = &self.limit_times {
             write!(f, "lt{}", times)?;
         }
         if let Some(counts) = &self.limit_counts {
-            // 如果两个都有，怎么分？假设不支持同时显示或者用逗号分隔
             write!(f, "lc{}", counts)?;
         }
         Ok(())

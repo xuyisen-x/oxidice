@@ -168,10 +168,10 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
     match function_name {
         Floor => {
             if is_exactly_one_number(&args_hir) {
-                let num = exactly_one_number(args_hir)?;
+                let num = exactly_one_number(args_hir);
                 Ok(HIR::floor_number(num))
             } else if is_exactly_one_list(&args_hir) {
-                let list = exactly_one_list(args_hir)?;
+                let list = exactly_one_list(args_hir);
                 Ok(HIR::floor_list(list))
             } else {
                 let list = treat_as_list(args_hir)?;
@@ -180,10 +180,10 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
         }
         Ceil => {
             if is_exactly_one_number(&args_hir) {
-                let num = exactly_one_number(args_hir)?;
+                let num = exactly_one_number(args_hir);
                 Ok(HIR::ceil_number(num))
             } else if is_exactly_one_list(&args_hir) {
-                let list = exactly_one_list(args_hir)?;
+                let list = exactly_one_list(args_hir);
                 Ok(HIR::ceil_list(list))
             } else {
                 let list = treat_as_list(args_hir)?;
@@ -192,10 +192,10 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
         }
         Round => {
             if is_exactly_one_number(&args_hir) {
-                let num = exactly_one_number(args_hir)?;
+                let num = exactly_one_number(args_hir);
                 Ok(HIR::round_number(num))
             } else if is_exactly_one_list(&args_hir) {
-                let list = exactly_one_list(args_hir)?;
+                let list = exactly_one_list(args_hir);
                 Ok(HIR::round_list(list))
             } else {
                 let list = treat_as_list(args_hir)?;
@@ -204,10 +204,10 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
         }
         Abs => {
             if is_exactly_one_number(&args_hir) {
-                let num = exactly_one_number(args_hir)?;
+                let num = exactly_one_number(args_hir);
                 Ok(HIR::abs_number(num))
             } else if is_exactly_one_list(&args_hir) {
-                let list = exactly_one_list(args_hir)?;
+                let list = exactly_one_list(args_hir);
                 Ok(HIR::abs_list(list))
             } else {
                 let list = treat_as_list(args_hir)?;
@@ -216,10 +216,10 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
         }
         Max => {
             if is_exactly_one_list_and_one_number(&args_hir) {
-                let (list, num) = exactly_one_list_and_one_number(args_hir)?;
+                let (list, num) = exactly_one_list_and_one_number(args_hir);
                 Ok(HIR::max_list(list, num))
             } else if is_exactly_one_list(&args_hir) {
-                let list = exactly_one_list(args_hir)?;
+                let list = exactly_one_list(args_hir);
                 Ok(HIR::max_number(list))
             } else {
                 let list = treat_as_list(args_hir)?;
@@ -228,10 +228,10 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
         }
         Min => {
             if is_exactly_one_list_and_one_number(&args_hir) {
-                let (list, num) = exactly_one_list_and_one_number(args_hir)?;
+                let (list, num) = exactly_one_list_and_one_number(args_hir);
                 Ok(HIR::min_list(list, num))
             } else if is_exactly_one_list(&args_hir) {
-                let list = exactly_one_list(args_hir)?;
+                let list = exactly_one_list(args_hir);
                 Ok(HIR::min_number(list))
             } else {
                 let list = treat_as_list(args_hir)?;
@@ -240,7 +240,7 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
         }
         Sum => {
             let list = if is_exactly_one_list(&args_hir) {
-                exactly_one_list(args_hir)?
+                exactly_one_list(args_hir)
             } else {
                 treat_as_list(args_hir)?
             };
@@ -248,7 +248,7 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
         }
         Avg => {
             let list = if is_exactly_one_list(&args_hir) {
-                exactly_one_list(args_hir)?
+                exactly_one_list(args_hir)
             } else {
                 treat_as_list(args_hir)?
             };
@@ -256,7 +256,7 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
         }
         Len => {
             let list = if is_exactly_one_list(&args_hir) {
-                exactly_one_list(args_hir)?
+                exactly_one_list(args_hir)
             } else {
                 treat_as_list(args_hir)?
             };
@@ -264,7 +264,7 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
         }
         Sort => {
             let list = if is_exactly_one_list(&args_hir) {
-                exactly_one_list(args_hir)?
+                exactly_one_list(args_hir)
             } else {
                 treat_as_list(args_hir)?
             };
@@ -272,7 +272,7 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
         }
         Sortd => {
             let list = if is_exactly_one_list(&args_hir) {
-                exactly_one_list(args_hir)?
+                exactly_one_list(args_hir)
             } else {
                 treat_as_list(args_hir)?
             };
@@ -297,7 +297,7 @@ fn lower_function_call(function_name: FunctionName, args: Vec<Expr>) -> Result<H
         }
         Filter(compare_expr) => {
             let list = if is_exactly_one_list(&args_hir) {
-                exactly_one_list(args_hir)?
+                exactly_one_list(args_hir)
             } else {
                 treat_as_list(args_hir)?
             };
@@ -356,7 +356,7 @@ fn lower_modifier_type2(
             if let Some(cp) = compare_param {
                 Ok(HIR::reroll(lowered_lhs, cp, limit))
             } else {
-                Err("Reroll modifier requires a compare parameter".to_string())
+                Err("Reroll modifier requires a compare parameter".to_string()) // unreachable
             }
         }
         Type2Op::Explode => Ok(HIR::explode(lowered_lhs, compare_param, limit)),
@@ -409,7 +409,7 @@ fn lower_modifier_type3(
                 Err(
                     "DeductFailures modifier can only be applied to a dice pool or success pool"
                         .to_string(),
-                )
+                ) // unreachable
             }
         }
     }
@@ -423,45 +423,27 @@ fn is_exactly_one_number(args: &Vec<HIR>) -> bool {
     args.len() == 1 && args[0].is_number()
 }
 
-fn exactly_one_number(args: Vec<HIR>) -> Result<NumberType, String> {
-    args.into_iter()
-        .next()
-        .ok_or_else(|| "".to_string())? // unreachable due to prior length check
-        .except_number()
-        .map_err(|_| "".to_string()) // unreachable due to prior type check
+fn exactly_one_number(args: Vec<HIR>) -> NumberType {
+    args.into_iter().next().unwrap().except_number().unwrap()
 }
 
 fn is_exactly_one_list(args: &Vec<HIR>) -> bool {
     args.len() == 1 && args[0].is_list()
 }
 
-fn exactly_one_list(args: Vec<HIR>) -> Result<ListType, String> {
-    args.into_iter()
-        .next()
-        .ok_or_else(|| "".to_string())? // unreachable due to prior length check
-        .except_list()
-        .map_err(|_| "".to_string()) // unreachable due to prior type check
+fn exactly_one_list(args: Vec<HIR>) -> ListType {
+    args.into_iter().next().unwrap().except_list().unwrap()
 }
 
 fn is_exactly_one_list_and_one_number(args: &Vec<HIR>) -> bool {
     args.len() == 2 && (args[0].is_list() && args[1].is_number())
 }
 
-fn exactly_one_list_and_one_number(args: Vec<HIR>) -> Result<(ListType, NumberType), String> {
+fn exactly_one_list_and_one_number(args: Vec<HIR>) -> (ListType, NumberType) {
     let mut iter = args.into_iter();
-    let list = iter
-        .next()
-        .ok_or_else(|| "".to_string())?     // unreachable due to prior length check
-        .except_list()
-        .map_err(|_|{"".to_string()})?               // unreachable due to prior type check
-    ;
-    let number = iter
-        .next()
-        .ok_or_else(|| "".to_string())?     // unreachable due to prior length check
-        .except_number()
-        .map_err(|_|{"".to_string()})?               // unreachable due to prior type check
-    ;
-    Ok((list, number))
+    let list = iter.next().unwrap().except_list().unwrap();
+    let number = iter.next().unwrap().except_number().unwrap();
+    (list, number)
 }
 
 fn treat_as_list(args: Vec<HIR>) -> Result<ListType, String> {
