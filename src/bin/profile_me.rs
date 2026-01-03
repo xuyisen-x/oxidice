@@ -1,5 +1,5 @@
 // src/bin/profile_me.rs
-use oxidice::parse_dice;
+use oxidice::parse_dice_and_show;
 use std::hint::black_box; // 替换为你的 crate 名字
 
 fn main() {
@@ -8,7 +8,7 @@ fn main() {
         "(10d6!kh3dh3 + 5d20r<2r>3) * max(floor(3.5), 2) + filter>3([1,2,3]) + max(tolist(1d10))";
 
     // 2. 预热 (Warm up) - 触发 lazy_static 初始化
-    let _ = parse_dice("1");
+    let _ = parse_dice_and_show("1");
 
     println!("Starting profile loop...");
 
@@ -16,7 +16,7 @@ fn main() {
     // 如果你的解析器很快，可能需要 1,000,000 次甚至更多
     for _ in 0..500_000 {
         // 使用 black_box 防止编译器把这行代码优化掉
-        let _ = black_box(parse_dice(complex_expr));
+        let _ = black_box(parse_dice_and_show(complex_expr));
     }
 
     println!("Done.");

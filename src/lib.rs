@@ -11,7 +11,6 @@ use serde::{Deserialize, Serialize};
 use tsify::Tsify;
 use wasm_bindgen::prelude::*;
 
-pub use crate::grammar::parse_dice;
 use crate::optimizer::constant_fold::constant_fold_hir;
 
 // ==========================================
