@@ -1,5 +1,5 @@
+use crate::types::eval_graph::*;
 use crate::types::hir::*;
-use crate::types::runtime::*;
 
 // 编译函数 HIR -> EvalGraph
 pub fn compile_hir_to_eval_graph(hir: HIR) -> EvalGraph {
