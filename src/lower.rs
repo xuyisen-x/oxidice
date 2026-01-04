@@ -116,7 +116,38 @@ fn lower_binary(lhs: Expr, op: BinOp, rhs: Expr) -> Result<HIR, String> {
         }
         (HIR::List(list), BinOp::ListMul, HIR::Number(times))
         | (HIR::Number(times), BinOp::ListMul, HIR::List(list)) => {
-            Ok(HIR::multiply_list(list, times))
+            use crate::optimizer::constant_fold::constant_fold_hir;
+            // 特殊处理直接原地展开
+            let list = constant_fold_hir(HIR::List(list))?
+                .except_list()
+                .map_err(|_| "unreachable")?;
+            let times = constant_fold_hir(HIR::Number(times))?
+                .except_number()
+                .map_err(|_| "unreachable")?;
+            if !list.is_explicit() || !times.is_constant() {
+                return Err(
+                    "List multiplication can only be applied to explicit list and constant number"
+                        .to_string(),
+                );
+            }
+            let times_val = match times {
+                NumberType::Constant(val) if (val as i64) > 0 => val as usize,
+                NumberType::Constant(_) => {
+                    return Err("List multiplication times must be positive".to_string());
+                }
+                _ => unreachable!(),
+            };
+            let list_val = match list {
+                ListType::Explicit(vals) => vals,
+                _ => unreachable!(),
+            };
+
+            let mut combined = Vec::with_capacity(list_val.len() * times_val);
+            for _ in 0..times_val {
+                combined.extend(list_val.iter().cloned()); // 这里的Clone无法避免
+            }
+
+            Ok(HIR::explicit_list(combined))
         }
         // 列表与数之间的二元操作（无顺序要求，广播操作）
         (HIR::List(list), BinOp::Add, HIR::Number(num))

@@ -69,8 +69,6 @@ fn constant_fold() {
     test_legal_input("sortd([3,1,4,2])", "[4,3,2,1]");
     test_legal_input("sortd(3,1,4,2)", "[4,3,2,1]");
     test_legal_input("sortd([3,1,4,2,1d6])", "sortd([3,1,4,2,1d6])");
-    test_legal_input("sort([3,1] ** 1d6)", "sort([3,1]**1d6)");
-    test_legal_input("sortd([3,1] ** 1d6)", "sortd([3,1]**1d6)");
     test_legal_input("filter<>3([1,2,3,4,5])", "[1,2,4,5]");
     test_legal_input("filter<>3(1,2,3,4,5)", "[1,2,4,5]");
     test_legal_input("filter>3([1,2,3,4,5])", "[4,5]");
@@ -82,6 +80,7 @@ fn constant_fold() {
     test_legal_input("filter<3([1d6,2,3,4,5])", "filter<3([1d6,2,3,4,5])");
     test_legal_input("[1,2,3] + tolist(1d6)", "[1,2,3]+tolist(1d6)");
     test_legal_input("[1,2,3]**3", "[1,2,3,1,2,3,1,2,3]");
+    test_legal_input("[1,2,3]**(2 * 1 + 1)", "[1,2,3,1,2,3,1,2,3]");
     test_legal_input("3**[1,2,3]", "[1,2,3,1,2,3,1,2,3]");
     test_legal_input("[1d6,2d6,3d6]**3", "[1d6,2d6,3d6,1d6,2d6,3d6,1d6,2d6,3d6]");
     test_legal_input("[1,2,3] + 1", "[2,3,4]");
@@ -140,7 +139,6 @@ fn constant_fold() {
 #[test]
 fn precedence() {
     test_legal_input("(1d6 - 2d6) / 2", "(1d6-2d6)/2");
-    test_legal_input("sort([3,1] ** 1d6)", "sort([3,1]**1d6)");
     test_legal_input("[1,2] + [3,4] * 1d6", "[1,2]+[3,4]*1d6");
     test_legal_input("([1,2] + tolist(1d6)) * 1d6", "([1,2]+tolist(1d6))*1d6");
     test_legal_input("[1,2] + 1d6 + [4,5] + 2d6", "(([1,2]+1d6)+[4,5])+2d6");
@@ -150,6 +148,8 @@ fn precedence() {
 #[test]
 fn illegal_expressions() {
     test_illegal_input("[1,2,3] ** (2 - 3)");
+    test_illegal_input("[1,2,3] ** 1d6");
+    test_illegal_input("tolist(1d6) ** 4");
     test_illegal_input("2 / 0");
     test_illegal_input("2 // 0");
     test_illegal_input("2 % 0");

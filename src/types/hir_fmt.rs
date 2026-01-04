@@ -252,12 +252,6 @@ impl fmt::Display for ListType {
                     }
 
                     // --- List op Number (广播) ---
-                    ListBinaryType::MultiplyList(l, n) => {
-                        // List ** Number
-                        fmt_child(f, l.precedence(), l)?;
-                        write!(f, "**")?;
-                        fmt_child(f, n.precedence(), n)
-                    }
                     ListBinaryType::Add(l, n) => {
                         fmt_child(f, l.precedence(), l)?;
                         write!(f, "+")?;

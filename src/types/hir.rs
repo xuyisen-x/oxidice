@@ -86,7 +86,6 @@ pub enum ListType {
 #[derive(Debug, Clone, PartialEq)]
 pub enum ListBinaryType {
     AddList(Box<ListType>, Box<ListType>), // list_type + list_type
-    MultiplyList(Box<ListType>, Box<NumberType>), // list_type * number_type, using to repeat list
     // broadcast operations between list and number
     Add(Box<ListType>, Box<NumberType>),
     Multiply(Box<ListType>, Box<NumberType>),
@@ -210,13 +209,6 @@ impl HIR {
         HIR::List(ListType::ListBinary(ListBinaryType::AddList(
             Box::new(left),
             Box::new(right),
-        )))
-    }
-
-    pub fn multiply_list(list: ListType, times: NumberType) -> Self {
-        HIR::List(ListType::ListBinary(ListBinaryType::MultiplyList(
-            Box::new(list),
-            Box::new(times),
         )))
     }
 

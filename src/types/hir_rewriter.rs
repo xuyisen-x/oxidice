@@ -243,8 +243,7 @@ pub trait HirVisitor {
                 self.visit_list(l2)?;
                 Ok(())
             }
-            MultiplyList(l, n)
-            | Add(l, n)
+            Add(l, n)
             | Multiply(l, n)
             | Subtract(l, n)
             | Divide(l, n)

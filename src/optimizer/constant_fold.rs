@@ -181,28 +181,6 @@ fn fold_list_binary_op(list_bin_op: &mut ListBinaryType) -> Result<Option<ListTy
                 unreachable!("Already checked matches Explicit")
             }
         }
-        MultiplyList(list, num) => {
-            if !list.is_explicit() || !num.is_constant() {
-                return Ok(None);
-            }
-            let count = match try_get_constant_value(num) {
-                Some(v) if v >= 0.0 && v.fract() == 0.0 => v as usize,
-                _ => {
-                    return Err(
-                        "List multiplication requires a non-negative integer constant".to_string(),
-                    );
-                }
-            };
-            if let ListType::Explicit(vec) = &**list {
-                let mut combined = Vec::with_capacity(vec.len() * count);
-                for _ in 0..count {
-                    combined.extend(vec.iter().cloned()); // 这里的Clone无法避免
-                }
-                Ok(Some(ListType::Explicit(combined)))
-            } else {
-                unreachable!("Already checked matches Explicit")
-            }
-        }
         // 接下来是广播操作的折叠，只处理常数列表广播常数的情况
         Add(list, num) => {
             let Some(num) = try_get_constant_value(num) else {
