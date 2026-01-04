@@ -78,39 +78,39 @@ impl Compiler {
             NumberType::NumberFunction(func) => match func {
                 NumberFunctionType::Floor(n) => {
                     let id = self.compile_number(*n);
-                    self.push(EvalNode::Floor(id))
+                    self.push(EvalNode::NumFloor(id))
                 }
                 NumberFunctionType::Ceil(n) => {
                     let id = self.compile_number(*n);
-                    self.push(EvalNode::Ceil(id))
+                    self.push(EvalNode::NumCeil(id))
                 }
                 NumberFunctionType::Round(n) => {
                     let id = self.compile_number(*n);
-                    self.push(EvalNode::Round(id))
+                    self.push(EvalNode::NumRound(id))
                 }
                 NumberFunctionType::Abs(n) => {
                     let id = self.compile_number(*n);
-                    self.push(EvalNode::Abs(id))
+                    self.push(EvalNode::NumAbs(id))
                 }
                 NumberFunctionType::Max(list) => {
                     let id = self.compile_list(*list);
-                    self.push(EvalNode::Max(id))
+                    self.push(EvalNode::NumMax(id))
                 }
                 NumberFunctionType::Min(list) => {
                     let id = self.compile_list(*list);
-                    self.push(EvalNode::Min(id))
+                    self.push(EvalNode::NumMin(id))
                 }
                 NumberFunctionType::Sum(list) => {
                     let id = self.compile_list(*list);
-                    self.push(EvalNode::Sum(id))
+                    self.push(EvalNode::NumSum(id))
                 }
                 NumberFunctionType::Avg(list) => {
                     let id = self.compile_list(*list);
-                    self.push(EvalNode::Avg(id))
+                    self.push(EvalNode::NumAvg(id))
                 }
                 NumberFunctionType::Len(list) => {
                     let id = self.compile_list(*list);
-                    self.push(EvalNode::Len(id))
+                    self.push(EvalNode::NumLen(id))
                 }
             },
             NumberType::Neg(n) => {

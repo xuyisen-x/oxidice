@@ -1,5 +1,13 @@
 use super::expr::CompareOp;
+
+#[derive(Copy, Clone, Debug)]
 pub struct NodeId(pub u32); // A simple wrapper for node identifiers
+
+impl NodeId {
+    pub fn to_index(&self) -> usize {
+        self.0 as usize
+    }
+}
 
 pub struct EvalGraph {
     pub nodes: Vec<EvalNode>,
@@ -35,15 +43,15 @@ pub enum EvalNode {
     ListModuloReverse(NodeId, NodeId),
 
     // 函数调用——返回数值
-    Floor(NodeId),
-    Ceil(NodeId),
-    Round(NodeId),
-    Abs(NodeId),
-    Max(NodeId),
-    Min(NodeId),
-    Sum(NodeId),
-    Avg(NodeId),
-    Len(NodeId),
+    NumFloor(NodeId),
+    NumCeil(NodeId),
+    NumRound(NodeId),
+    NumAbs(NodeId),
+    NumMax(NodeId),
+    NumMin(NodeId),
+    NumSum(NodeId),
+    NumAvg(NodeId),
+    NumLen(NodeId),
     // 函数调用——返回列表
     ListFloor(NodeId),
     ListCeil(NodeId),
@@ -77,6 +85,7 @@ pub enum EvalNode {
     DiceDeductFailures(NodeId, ModParamNode),
 }
 
+#[derive(Debug, Clone)]
 pub struct ModParamNode {
     pub operator: CompareOp,
     pub value: NodeId,

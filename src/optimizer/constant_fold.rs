@@ -19,7 +19,7 @@ impl HirVisitor for ConstantFolder {
                 }
             }
             NumberBinary(bin_op) => fold_binary_op(bin_op)?,
-            NumberFunction(func) => fold_number_function(func),
+            NumberFunction(func) => fold_number_function(func)?,
             DicePool(dice_pool) => fold_dice_pool(dice_pool),
             Constant(_) | SuccessPool(_) => None, // 无法折叠，也不应折叠
         };
@@ -58,18 +58,18 @@ pub fn constant_fold_hir(hir: HIR) -> Result<HIR, String> {
 // 细分函数定义
 // ==========================================
 
-fn fold_number_function(func: &mut NumberFunctionType) -> Option<NumberType> {
+fn fold_number_function(func: &mut NumberFunctionType) -> Result<Option<NumberType>, String> {
     use NumberFunctionType::*;
 
     match func {
         // --- 单值函数 ---
-        Floor(inner) => try_map_const(inner, |v| v.floor()),
-        Ceil(inner) => try_map_const(inner, |v| v.ceil()),
-        Round(inner) => try_map_const(inner, |v| v.round()),
-        Abs(inner) => try_map_const(inner, |v| v.abs()),
+        Floor(inner) => Ok(try_map_const(inner, |v| v.floor())),
+        Ceil(inner) => Ok(try_map_const(inner, |v| v.ceil())),
+        Round(inner) => Ok(try_map_const(inner, |v| v.round())),
+        Abs(inner) => Ok(try_map_const(inner, |v| v.abs())),
 
         // --- 列表聚合函数 (Sum, Avg, Min, Max, Len) ---
-        Sum(list_box) => fold_list_aggregate(list_box, |nums| {
+        Sum(list_box) => Ok(fold_list_aggregate(list_box, |nums| {
             nums.iter().fold(0.0_f64, |acc, x| acc + *x)
         })
         .or_else(|| {
@@ -91,26 +91,38 @@ fn fold_number_function(func: &mut NumberFunctionType) -> Option<NumberType> {
             } else {
                 unreachable!("Already checked matches Explicit")
             }
-        }),
-        Avg(list_box) => fold_list_aggregate(list_box, |nums| {
+        })),
+        Avg(list_box) => Ok(fold_list_aggregate(list_box, |nums| {
             if nums.is_empty() {
                 0.0
             } else {
                 nums.iter().sum::<f64>() / nums.len() as f64
             }
-        }),
-        Max(list_box) => fold_list_aggregate(list_box, |nums| {
-            nums.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
-        }),
-        Min(list_box) => fold_list_aggregate(list_box, |nums| {
-            nums.iter().fold(f64::INFINITY, |a, &b| a.min(b))
-        }),
+        })),
+        Max(list_box) => {
+            if is_empty_list(list_box) {
+                Err("Cannot compute Max of an empty list".to_string())
+            } else {
+                Ok(fold_list_aggregate(list_box, |nums| {
+                    nums.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b))
+                }))
+            }
+        }
+        Min(list_box) => {
+            if is_empty_list(list_box) {
+                Err("Cannot compute Min of an empty list".to_string())
+            } else {
+                Ok(fold_list_aggregate(list_box, |nums| {
+                    nums.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+                }))
+            }
+        }
         Len(list_box) => {
             // Len 比较特殊，只要是 Explicit 列表，不管里面是不是常数，长度都是固定的
             if let ListType::Explicit(vec) = &**list_box {
-                Some(NumberType::Constant(vec.len() as f64))
+                Ok(Some(NumberType::Constant(vec.len() as f64)))
             } else {
-                None
+                Ok(None)
             }
         }
     }
@@ -298,7 +310,7 @@ fn fold_dice_pool(dice_pool: &mut DicePoolType) -> Option<NumberType> {
             }
             let new_count = if count_box.is_constant() {
                 let count = try_get_constant_value(&count_box)?; // 一定成功
-                let new_count = (count as i64) as f64; // 模拟转化为整数的截断
+                let new_count = (count as i32) as f64; // 模拟转化为整数的截断
                 if new_count <= 0.0 {
                     return Some(NumberType::Constant(0.0));
                 } else if count != new_count {
@@ -311,7 +323,7 @@ fn fold_dice_pool(dice_pool: &mut DicePoolType) -> Option<NumberType> {
             };
             let new_side = if side_box.is_constant() {
                 let side = try_get_constant_value(&side_box)?; // 一定成功
-                let new_side = (side as i64) as f64; // 模拟转化为整数的截断
+                let new_side = (side as i32) as f64; // 模拟转化为整数的截断
                 if new_side <= 0.0 {
                     return Some(NumberType::Constant(0.0));
                 } else if side != new_side {
@@ -339,7 +351,7 @@ fn fold_dice_pool(dice_pool: &mut DicePoolType) -> Option<NumberType> {
         }
         Fudge(count_box) if count_box.is_constant() => {
             let count = try_get_constant_value(&count_box)?; // 一定成功
-            let new_count = (count as i64) as f64; // 模拟转化为整数的截断
+            let new_count = (count as i32) as f64; // 模拟转化为整数的截断
             if new_count > 0.0 {
                 if new_count == count {
                     None // 没有变化，保持不变
@@ -354,7 +366,7 @@ fn fold_dice_pool(dice_pool: &mut DicePoolType) -> Option<NumberType> {
         }
         Coin(count_box) if count_box.is_constant() => {
             let count = try_get_constant_value(&count_box)?; // 一定成功
-            let new_count = (count as i64) as f64; // 模拟转化为整数的截断
+            let new_count = (count as i32) as f64; // 模拟转化为整数的截断
             if new_count > 0.0 {
                 if count == new_count {
                     None // 没有变化，保持不变
@@ -450,7 +462,11 @@ fn try_get_constant_values(list: &ListType) -> Option<Vec<f64>> {
 
 // 从列表中保留 count 个元素并保持相对顺序
 //keep_highest: true 为取最大 (Max), false 为取最小 (Min)
-fn keep_elements_preserve_order(values: Vec<f64>, raw_count: f64, keep_highest: bool) -> ListType {
+pub fn keep_elements_preserve_order(
+    values: Vec<f64>,
+    raw_count: f64,
+    keep_highest: bool,
+) -> ListType {
     if raw_count < 0.0 {
         return ListType::Explicit(Vec::new());
     }
@@ -488,4 +504,11 @@ fn keep_elements_preserve_order(values: Vec<f64>, raw_count: f64, keep_highest: 
         .collect();
 
     ListType::Explicit(result)
+}
+
+fn is_empty_list(list: &ListType) -> bool {
+    match list {
+        ListType::Explicit(vec) => vec.is_empty(),
+        _ => false,
+    }
 }

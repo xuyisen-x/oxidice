@@ -131,7 +131,7 @@ fn lower_binary(lhs: Expr, op: BinOp, rhs: Expr) -> Result<HIR, String> {
                 );
             }
             let times_val = match times {
-                NumberType::Constant(val) if (val as i64) > 0 => val as usize,
+                NumberType::Constant(val) if (val as i32) > 0 => val as usize,
                 NumberType::Constant(_) => {
                     return Err("List multiplication times must be positive".to_string());
                 }

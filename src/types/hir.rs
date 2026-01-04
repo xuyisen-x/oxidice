@@ -540,19 +540,19 @@ impl ModParam {
         self.value.is_constant()
     }
 
-    pub fn get_compare_function(&self) -> Option<Box<dyn Fn(f64) -> bool>> {
+    pub fn get_compare_function(&self) -> Option<impl Fn(f64) -> bool> {
         let target_value = match *self.value {
             NumberType::Constant(v) => v,
             _ => return None,
         };
-        match self.operator {
-            CompareOp::Equal => Some(Box::new(move |x: f64| x == target_value)),
-            CompareOp::NotEqual => Some(Box::new(move |x: f64| x != target_value)),
-            CompareOp::Less => Some(Box::new(move |x: f64| x < target_value)),
-            CompareOp::LessEqual => Some(Box::new(move |x: f64| x <= target_value)),
-            CompareOp::Greater => Some(Box::new(move |x: f64| x > target_value)),
-            CompareOp::GreaterEqual => Some(Box::new(move |x: f64| x >= target_value)),
-        }
+        Some(move |x: f64| match self.operator {
+            CompareOp::Equal => (x - target_value).abs() < std::f64::EPSILON,
+            CompareOp::NotEqual => (x - target_value).abs() >= std::f64::EPSILON,
+            CompareOp::Less => x < target_value,
+            CompareOp::LessEqual => x <= target_value,
+            CompareOp::Greater => x > target_value,
+            CompareOp::GreaterEqual => x >= target_value,
+        })
     }
 }
 

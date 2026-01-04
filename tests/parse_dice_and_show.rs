@@ -63,6 +63,8 @@ fn constant_fold() {
     test_legal_input("min([1,2,5,4,3], 1d6)", "min([1,2,5,4,3],1d6)");
     test_legal_input("min([1,2,5,4,3], 7)", "[1,2,5,4,3]");
     test_legal_input("min([1,2,5,4,3], 0)", "[]");
+    test_legal_input("sum([])", "0");
+    test_legal_input("avg([])", "0");
     test_legal_input("sort([3,1,4,2])", "[1,2,3,4]");
     test_legal_input("sort(3,1,4,2)", "[1,2,3,4]");
     test_legal_input("sort([3,1,4,2,1d6])", "sort([3,1,4,2,1d6])");
@@ -187,6 +189,9 @@ fn illegal_expressions() {
     test_illegal_input("10d6!!<[1,2]");
     test_illegal_input("10d6!<3lt[1,2]lc10");
     test_illegal_input("10d6!<3lt3lc[1,2]");
+    test_illegal_input("max()");
+    test_illegal_input("max([])");
+    test_illegal_input("min([])");
 }
 
 #[test]

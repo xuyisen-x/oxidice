@@ -6,6 +6,7 @@ pub mod compiler;
 pub(crate) mod grammar;
 pub(crate) mod lower;
 pub(crate) mod optimizer;
+pub mod runtime_engine;
 pub(crate) mod types;
 
 use serde::{Deserialize, Serialize};

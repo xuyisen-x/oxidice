@@ -159,7 +159,7 @@ fn rebuild_add_tree(mut terms: Vec<(NumberType, f64)>) -> NumberType {
 // 合并 terms 中可以合并的项，如 1d6 + 2d6 -> 3d6
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 enum DiceType {
-    Standard(bool, i64), // (is_add, sides)
+    Standard(bool, i32), // (is_add, sides)
     Fudge(bool),
     Coin(bool),
 }
@@ -209,7 +209,7 @@ fn merge_terms(terms: Vec<(NumberType, f64)>) -> Vec<(NumberType, f64)> {
 }
 
 // 识别出counts和sides均为常数的项
-fn mergeable_dice(node: &NumberType, sign: f64) -> Option<(DiceType, i64)> {
+fn mergeable_dice(node: &NumberType, sign: f64) -> Option<(DiceType, i32)> {
     use NumberType::*;
     fn get_const_value(n: &NumberType) -> f64 {
         if let Constant(c) = n { *c } else { 0.0 }
@@ -220,8 +220,8 @@ fn mergeable_dice(node: &NumberType, sign: f64) -> Option<(DiceType, i64)> {
             Standard(counts, sides) => {
                 if counts.is_constant() && sides.is_constant() {
                     let c = get_const_value(counts);
-                    let s = get_const_value(sides) as i64;
-                    let c = if c > 0.0 { c as i64 } else { 0 };
+                    let s = get_const_value(sides) as i32;
+                    let c = if c > 0.0 { c as i32 } else { 0 };
                     Some((DiceType::Standard(sign > 0.0, s), c))
                 } else {
                     return None;
@@ -230,7 +230,7 @@ fn mergeable_dice(node: &NumberType, sign: f64) -> Option<(DiceType, i64)> {
             Fudge(counts) => {
                 if counts.is_constant() {
                     let c = get_const_value(counts);
-                    let c = if c > 0.0 { c as i64 } else { 0 };
+                    let c = if c > 0.0 { c as i32 } else { 0 };
                     Some((DiceType::Fudge(sign > 0.0), c))
                 } else {
                     return None;
@@ -239,7 +239,7 @@ fn mergeable_dice(node: &NumberType, sign: f64) -> Option<(DiceType, i64)> {
             Coin(counts) => {
                 if counts.is_constant() {
                     let c = get_const_value(counts);
-                    let c = if c > 0.0 { c as i64 } else { 0 };
+                    let c = if c > 0.0 { c as i32 } else { 0 };
                     Some((DiceType::Coin(sign > 0.0), c))
                 } else {
                     return None;
