@@ -372,16 +372,8 @@ fn lower_modifier_type2(
     let lowered_lhs = lower_expr(lhs)?
         .except_dice_pool()
         .map_err(|_| "Type2 modifier can only be applied to a dice pool".to_string())?;
-    let compare_param = if let Some(mp) = param {
-        Some(expr_mp_to_hir_mp(mp)?)
-    } else {
-        None
-    };
-    let limit = if let Some(lim) = limit {
-        Some(expr_limit_to_hir_limit(lim)?)
-    } else {
-        None
-    };
+    let compare_param = param.map(|mp| expr_mp_to_hir_mp(mp)).transpose()?;
+    let limit = limit.map(|lim| expr_limit_to_hir_limit(lim)).transpose()?;
     match op {
         Type2Op::Reroll => {
             if let Some(cp) = compare_param {

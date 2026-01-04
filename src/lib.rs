@@ -2,6 +2,7 @@
 //!
 //! This crate provides functionality for dice rolling and related utilities.
 
+pub mod compiler;
 pub(crate) mod grammar;
 pub(crate) mod lower;
 pub(crate) mod optimizer;
