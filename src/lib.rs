@@ -2,11 +2,12 @@
 //!
 //! This crate provides functionality for dice rolling and related utilities.
 
-pub mod compiler;
+pub(crate) mod compiler;
 pub(crate) mod grammar;
 pub(crate) mod lower;
 pub(crate) mod optimizer;
-pub mod runtime_engine;
+pub(crate) mod runtime;
+pub(crate) mod runtime_engine;
 pub(crate) mod types;
 
 use serde::{Deserialize, Serialize};
@@ -25,6 +26,8 @@ pub fn parse_dice_and_show(input: &str) -> Result<String, String> {
     let hir = constant_fold_hir(hir)?;
     Ok(format!("{}", hir))
 }
+
+pub use runtime::roll_without_animation;
 
 // ==========================================
 // 辅助类型定义

@@ -1,4 +1,5 @@
 use oxidice::parse_dice_and_show;
+use oxidice::roll_without_animation;
 use std::io::{self, Write};
 
 fn main() {
@@ -31,7 +32,12 @@ fn main() {
         // 调用原来的函数
         match parse_dice_and_show(input) {
             Ok(output) => println!("Parsed HIR: {}", output),
-            Err(e) => eprintln!("Error: {}", e),
+            Err(e) => println!("Error: {}", e),
+        }
+
+        match roll_without_animation(input.to_string(), 100, 1000) {
+            Ok(result) => println!("Roll result: {:?}", result),
+            Err(e) => println!("Error during roll: {}", e),
         }
     }
 }

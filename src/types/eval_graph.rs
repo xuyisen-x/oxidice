@@ -1,6 +1,6 @@
 use super::expr::CompareOp;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct NodeId(pub u32); // A simple wrapper for node identifiers
 
 impl NodeId {
@@ -91,6 +91,7 @@ pub struct ModParamNode {
     pub value: NodeId,
 }
 
+#[derive(Debug, Clone)]
 pub struct LimitNode {
     pub limit_times: Option<NodeId>,
     pub limit_counts: Option<NodeId>,
