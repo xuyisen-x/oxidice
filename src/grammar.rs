@@ -260,8 +260,15 @@ fn parse_mod_param(input: &mut &str) -> WNResult<ModParam> {
 // Type 1: kh, kl, dh, dl, min, max (Optional Atom)
 // 返回一个构建器闭包
 fn parse_type1_modifier(input: &mut &str) -> WNResult<ModifierBuilder> {
-    let start = input.checkpoint();
-    let tag_str = alpha1.parse_next(input)?;
+    let tag_str = alt((
+        Caseless("kh"),
+        Caseless("kl"),
+        Caseless("dh"),
+        Caseless("dl"),
+        Caseless("min"),
+        Caseless("max"),
+    ))
+    .parse_next(input)?;
 
     let op = match tag_str.to_lowercase().as_str() {
         "kh" => Type1Op::KeepHigh,
@@ -270,10 +277,7 @@ fn parse_type1_modifier(input: &mut &str) -> WNResult<ModifierBuilder> {
         "dl" => Type1Op::DropLow,
         "min" => Type1Op::Min,
         "max" => Type1Op::Max,
-        _ => {
-            input.reset(&start);
-            return fail(input);
-        }
+        _ => unreachable!(),
     };
 
     let val_opt = if op == Type1Op::Min || op == Type1Op::Max {
@@ -321,17 +325,13 @@ fn parse_type2_modifier(input: &mut &str) -> WNResult<ModifierBuilder> {
 
 // Type 3: cs, df, sf (Required ModParam)
 fn parse_type3_modifier(input: &mut &str) -> WNResult<ModifierBuilder> {
-    let start = input.checkpoint();
-    let tag_str = alpha1.parse_next(input)?;
+    let tag_str = alt((Caseless("cs"), Caseless("df"), Caseless("sf"))).parse_next(input)?;
 
     let op = match tag_str.to_lowercase().as_str() {
         "cs" => Type3Op::CountSuccesses,
         "df" => Type3Op::DeductFailures,
         "sf" => Type3Op::SubtractFailures,
-        _ => {
-            input.reset(&start);
-            return fail(input);
-        }
+        _ => unreachable!(),
     };
 
     let param = cut_err(parse_mod_param).parse_next(input)?;

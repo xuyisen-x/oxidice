@@ -1,9 +1,12 @@
+use super::render_result::render_result;
 use super::runtime_engine::ExecutionContext;
+use crate::types::output_node::OutputNode;
 use crate::types::runtime_value::*;
+use wasm_bindgen::prelude::*;
 
 enum DiceRollerState {
     Error(String),                            // 运行时出现错误
-    Done(RuntimeValue),                       // 运行完成
+    Done(OutputNode),                         // 运行完成
     WaitingForResponses(Vec<RuntimeRequest>), // 等待外部骰子结果
     WaitingForEvaluation,                     // 等待继续评估
 }
@@ -43,7 +46,11 @@ impl DiceRollerWithoutAnimation {
         }
 
         match self.context.eval_node(self.context.get_root_id()) {
-            Ok(Some(value)) => self.state = DiceRollerState::Done(value),
+            Ok(Some(_)) => {
+                let output_node =
+                    render_result(self.context.get_graph(), self.context.get_memory());
+                self.state = DiceRollerState::Done(output_node);
+            }
             Ok(None) => {
                 // 先检查递归计数是否达到上限
                 if self.recursion_limit <= 1 {
@@ -84,7 +91,7 @@ impl DiceRollerWithoutAnimation {
         }
     }
 
-    pub fn try_get_results(&self) -> Result<Option<RuntimeValue>, String> {
+    pub fn try_get_results(&self) -> Result<Option<OutputNode>, String> {
         match &self.state {
             DiceRollerState::Error(e) => Err(e.clone()),
             DiceRollerState::Done(v) => Ok(Some(v.clone())),
@@ -93,11 +100,12 @@ impl DiceRollerWithoutAnimation {
     }
 }
 
+#[wasm_bindgen]
 pub fn roll_without_animation(
     dice_expr: String,
     recursion_limit: u32,
     dice_count_limit: u32,
-) -> Result<RuntimeValue, String> {
+) -> Result<OutputNode, String> {
     fn generate_response(request: &RuntimeRequest, counter: &mut u32) -> RuntimeResponse {
         use rand::Rng;
         let mut rng = rand::rng();

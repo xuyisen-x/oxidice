@@ -6,11 +6,12 @@ pub(crate) mod compiler;
 pub(crate) mod grammar;
 pub(crate) mod lower;
 pub(crate) mod optimizer;
+pub(crate) mod render_result;
 pub(crate) mod runtime;
 pub(crate) mod runtime_engine;
 pub(crate) mod types;
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use tsify::Tsify;
 use wasm_bindgen::prelude::*;
 
@@ -34,7 +35,7 @@ pub use runtime::roll_without_animation;
 // ==========================================
 
 // 用于检查常量是否是常量整数的结果类型，用于check_constant_integer函数
-#[derive(Tsify, Serialize, Deserialize)]
+#[derive(Tsify, Serialize)]
 #[tsify(into_wasm_abi)]
 #[serde(tag = "result", content = "value")]
 pub enum ConstantIntegerCheckResult {
@@ -43,7 +44,7 @@ pub enum ConstantIntegerCheckResult {
 }
 
 // 用于表示带有原因的布尔结果，如果为False，则包含原因字符串
-#[derive(Tsify, Serialize, Deserialize)]
+#[derive(Tsify, Serialize)]
 #[tsify(into_wasm_abi)]
 #[serde(tag = "result", content = "value")]
 pub enum FoldedDiceExpression {

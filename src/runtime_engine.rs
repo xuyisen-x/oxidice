@@ -1123,6 +1123,14 @@ impl ExecutionContext {
     pub fn get_root_id(&self) -> NodeId {
         self.graph.root.clone()
     }
+
+    pub fn get_graph(&self) -> &EvalGraph {
+        &self.graph
+    }
+
+    pub fn get_memory(&self) -> &Vec<NodeState> {
+        &self.memory
+    }
 }
 
 fn keep_elements_preserve_order(values: Vec<f64>, raw_count: f64, keep_highest: bool) -> Vec<f64> {

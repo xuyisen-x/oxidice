@@ -102,11 +102,11 @@ pub enum DieOutcome {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RollId(pub u32); // A simple wrapper for dice identifiers
 
-impl RollId {
-    pub fn get_id(&self) -> u32 {
-        self.0
-    }
-}
+// impl RollId {
+//     pub fn get_id(&self) -> u32 {
+//         self.0
+//     }
+// }
 
 #[derive(Debug, Clone)]
 pub struct DieDetail {

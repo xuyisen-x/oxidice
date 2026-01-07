@@ -137,12 +137,48 @@ impl fmt::Display for DicePoolType {
                 }
             }
             // 修饰符紧凑连接
-            DicePoolType::KeepHigh(inner, n) => write!(f, "{}kh{}", inner, n),
-            DicePoolType::KeepLow(inner, n) => write!(f, "{}kl{}", inner, n),
-            DicePoolType::DropHigh(inner, n) => write!(f, "{}dh{}", inner, n),
-            DicePoolType::DropLow(inner, n) => write!(f, "{}dl{}", inner, n),
-            DicePoolType::Min(inner, n) => write!(f, "{}min{}", inner, n),
-            DicePoolType::Max(inner, n) => write!(f, "{}max{}", inner, n),
+            DicePoolType::KeepHigh(inner, n) => {
+                if n.precedence() <= Precedence::Dice {
+                    write!(f, "{}kh({})", inner, n)
+                } else {
+                    write!(f, "{}kh{}", inner, n)
+                }
+            }
+            DicePoolType::KeepLow(inner, n) => {
+                if n.precedence() <= Precedence::Dice {
+                    write!(f, "{}kl({})", inner, n)
+                } else {
+                    write!(f, "{}kl{}", inner, n)
+                }
+            }
+            DicePoolType::DropHigh(inner, n) => {
+                if n.precedence() <= Precedence::Dice {
+                    write!(f, "{}dh({})", inner, n)
+                } else {
+                    write!(f, "{}dh{}", inner, n)
+                }
+            }
+            DicePoolType::DropLow(inner, n) => {
+                if n.precedence() <= Precedence::Dice {
+                    write!(f, "{}dl({})", inner, n)
+                } else {
+                    write!(f, "{}dl{}", inner, n)
+                }
+            }
+            DicePoolType::Min(inner, n) => {
+                if n.precedence() <= Precedence::Dice {
+                    write!(f, "{}min({})", inner, n)
+                } else {
+                    write!(f, "{}min{}", inner, n)
+                }
+            }
+            DicePoolType::Max(inner, n) => {
+                if n.precedence() <= Precedence::Dice {
+                    write!(f, "{}max({})", inner, n)
+                } else {
+                    write!(f, "{}max{}", inner, n)
+                }
+            }
             DicePoolType::Explode(inner, mp, limit) => {
                 write!(f, "{}!", inner)?;
                 if let Some(mp) = mp {
@@ -350,7 +386,7 @@ impl fmt::Display for ListFunctionType {
                     operator: op,
                     value: v,
                 } = mp;
-                let mp_str = if v.is_constant() {
+                let mp_str = if v.precedence() >= Precedence::Call {
                     format!("{}{}", op, v)
                 } else {
                     format!("{}({})", op, v)
@@ -381,17 +417,29 @@ impl fmt::Display for CompareOp {
 
 impl fmt::Display for ModParam {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}{}", self.operator, self.value)
+        if self.value.precedence() <= Precedence::Dice {
+            write!(f, "{}({})", self.operator, self.value)
+        } else {
+            write!(f, "{}{}", self.operator, self.value)
+        }
     }
 }
 
 impl fmt::Display for Limit {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(times) = &self.limit_times {
-            write!(f, "lt{}", times)?;
+            if times.precedence() <= Precedence::Dice {
+                write!(f, "lt({})", times)?;
+            } else {
+                write!(f, "lt{}", times)?;
+            }
         }
         if let Some(counts) = &self.limit_counts {
-            write!(f, "lc{}", counts)?;
+            if counts.precedence() <= Precedence::Dice {
+                write!(f, "lc({})", counts)?;
+            } else {
+                write!(f, "lc{}", counts)?;
+            }
         }
         Ok(())
     }
