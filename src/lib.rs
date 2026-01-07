@@ -59,8 +59,8 @@ pub enum FoldedDiceExpression {
 //检查输入的表达式是否为常量整数
 #[wasm_bindgen]
 pub fn check_constant_integer(input: String) -> ConstantIntegerCheckResult {
+    use types::{hir::NumberType, hir::HIR};
     use ConstantIntegerCheckResult::*;
-    use types::{hir::HIR, hir::NumberType};
     let ast = match grammar::parse_dice(input.as_str()) {
         Ok(a) => a,
         Err(e) => return NotConstant(e),
