@@ -12,7 +12,7 @@ pub enum Precedence {
 }
 
 #[derive(Debug, Clone, Serialize, Tsify)]
-#[serde(tag = "type", content = "value")]
+#[serde(tag = "type", content = "value", rename_all = "camelCase")]
 pub enum DiceFaceType {
     Standard(i32), // 标准骰子，面数
     Fudge,         // Fudge骰子
@@ -21,7 +21,7 @@ pub enum DiceFaceType {
 
 // 简化的值的摘要，方便前端直接显示，不需要处理复杂的 Enum
 #[derive(Debug, Clone, Serialize, Tsify)]
-#[serde(tag = "type", content = "value")]
+#[serde(tag = "type", content = "value", rename_all = "camelCase")]
 pub enum ValueSummary {
     Number(f64),
     List(Vec<f64>),
@@ -40,7 +40,7 @@ pub enum ValueSummary {
 
 // 定义节点的渲染布局模式
 #[derive(Debug, Clone, Serialize, Tsify)]
-#[serde(tag = "type", content = "children")]
+#[serde(tag = "type", content = "children", rename_all = "camelCase")]
 pub enum NodeLayout {
     Atom,                                         // 原子值，直接显示 label (例如常量)
     List(Vec<OutputNode>),                        // 列表构造: "[" + Children.join(", ") + "]"
@@ -61,6 +61,7 @@ pub enum NodeLayout {
 }
 
 #[derive(Debug, Clone, Serialize, Tsify)]
+#[serde(rename_all = "camelCase")]
 pub enum OutcomeType {
     Success,
     Failure,
@@ -68,6 +69,7 @@ pub enum OutcomeType {
 }
 
 #[derive(Debug, Clone, Serialize, Tsify)]
+#[serde(rename_all = "camelCase")]
 pub struct DieDetailSummary {
     pub result: i32,
     pub is_kept: bool,
@@ -79,6 +81,7 @@ pub struct DieDetailSummary {
 
 // 核心输出节点
 #[derive(Debug, Clone, Serialize, Tsify)]
+#[serde(rename_all = "camelCase")]
 #[tsify(into_wasm_abi)]
 pub struct OutputNode {
     pub id: u32,
@@ -91,7 +94,6 @@ pub struct OutputNode {
     pub value: ValueSummary,
 
     // 节点的布局方式，决定如何渲染
-    #[serde(flatten)]
     pub layout: NodeLayout,
 
     // 是否要在节点周围加括号，以保持正确的运算顺序

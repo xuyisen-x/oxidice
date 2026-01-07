@@ -37,7 +37,7 @@ pub use runtime::roll_without_animation;
 // 用于检查常量是否是常量整数的结果类型，用于check_constant_integer函数
 #[derive(Tsify, Serialize)]
 #[tsify(into_wasm_abi)]
-#[serde(tag = "result", content = "value")]
+#[serde(tag = "result", content = "value", rename_all = "camelCase")]
 pub enum ConstantIntegerCheckResult {
     Constant(f64),
     NotConstant(String),
@@ -46,7 +46,7 @@ pub enum ConstantIntegerCheckResult {
 // 用于表示带有原因的布尔结果，如果为False，则包含原因字符串
 #[derive(Tsify, Serialize)]
 #[tsify(into_wasm_abi)]
-#[serde(tag = "result", content = "value")]
+#[serde(tag = "result", content = "value", rename_all = "camelCase")]
 pub enum FoldedDiceExpression {
     Valid(String),
     Invalid(String),
@@ -57,13 +57,13 @@ pub enum FoldedDiceExpression {
 // ==========================================
 
 //检查输入的表达式是否为常量整数
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = checkConstantInteger)]
 pub fn check_constant_integer(input: String) -> ConstantIntegerCheckResult {
-    use types::{hir::NumberType, hir::HIR};
     use ConstantIntegerCheckResult::*;
+    use types::{hir::HIR, hir::NumberType};
     let ast = match grammar::parse_dice(input.as_str()) {
         Ok(a) => a,
-        Err(e) => return NotConstant(e),
+        Err(_) => return NotConstant("parse error".to_string()),
     };
     let hir = match lower::lower_expr(ast) {
         Ok(h) => h,
@@ -80,12 +80,12 @@ pub fn check_constant_integer(input: String) -> ConstantIntegerCheckResult {
 }
 
 // 检查输入的表达式是否为合法的骰子表达式
-#[wasm_bindgen]
+#[wasm_bindgen(js_name = tryFoldDiceExpression)]
 pub fn try_fold_dice_expression(input: String) -> FoldedDiceExpression {
     use FoldedDiceExpression::*;
     let ast = match grammar::parse_dice(input.as_str()) {
         Ok(a) => a,
-        Err(e) => return Invalid(e),
+        Err(_) => return Invalid("parse error".to_string()),
     };
     let hir = match lower::lower_expr(ast) {
         Ok(h) => h,
@@ -97,3 +97,5 @@ pub fn try_fold_dice_expression(input: String) -> FoldedDiceExpression {
     };
     Valid(format!("{}", folded_hir))
 }
+
+// 其他wasm_bindgen绑定的函数见runtime.rs
