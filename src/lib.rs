@@ -48,7 +48,7 @@ pub enum ConstantIntegerCheckResult {
 #[tsify(into_wasm_abi)]
 #[serde(tag = "result", content = "value", rename_all = "camelCase")]
 pub enum NumberCheckResult {
-    Number,
+    Number(String),
     NotNumber(String),
 }
 
@@ -107,8 +107,12 @@ pub fn check_number(input: String) -> NumberCheckResult {
         Ok(h) => h,
         Err(e) => return NotNumber(e),
     };
-    match hir {
-        HIR::Number(_) => Number,
+    let folded_hir = match constant_fold_hir(hir) {
+        Ok(fh) => fh,
+        Err(e) => return NotNumber(e),
+    };
+    match folded_hir {
+        HIR::Number(_) => Number(format!("{}", folded_hir)),
         _ => NotNumber("The expression is a list not a number.".to_string()),
     }
 }
