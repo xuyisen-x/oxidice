@@ -43,6 +43,15 @@ pub enum ConstantIntegerCheckResult {
     NotConstant(String),
 }
 
+// 用于检查常量是否是常量整数的结果类型，用于check_number函数
+#[derive(Tsify, Serialize)]
+#[tsify(into_wasm_abi)]
+#[serde(tag = "result", content = "value", rename_all = "camelCase")]
+pub enum NumberCheckResult {
+    Number,
+    NotNumber(String),
+}
+
 // 用于表示带有原因的布尔结果，如果为False，则包含原因字符串
 #[derive(Tsify, Serialize)]
 #[tsify(into_wasm_abi)]
@@ -74,8 +83,33 @@ pub fn check_constant_integer(input: String) -> ConstantIntegerCheckResult {
         Err(e) => return NotConstant(e),
     };
     match folded_hir {
-        HIR::Number(NumberType::Constant(c)) => Constant(c),
+        HIR::Number(NumberType::Constant(c)) => {
+            if c.fract() == 0.0 {
+                Constant(c)
+            } else {
+                NotConstant("The constant is not an integer.".to_string())
+            }
+        }
         _ => NotConstant("The expression is not a constant.".to_string()),
+    }
+}
+
+//检查检查输入的表达式是否为数字类型，而不是列表
+#[wasm_bindgen(js_name = checkNumber)]
+pub fn check_number(input: String) -> NumberCheckResult {
+    use NumberCheckResult::*;
+    use types::hir::HIR;
+    let ast = match grammar::parse_dice(input.as_str()) {
+        Ok(a) => a,
+        Err(_) => return NotNumber("parse error".to_string()),
+    };
+    let hir = match lower::lower_expr(ast) {
+        Ok(h) => h,
+        Err(e) => return NotNumber(e),
+    };
+    match hir {
+        HIR::Number(_) => Number,
+        _ => NotNumber("The expression is a list not a number.".to_string()),
     }
 }
 
