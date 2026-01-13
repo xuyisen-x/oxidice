@@ -5,7 +5,7 @@ use std::io::{self, Write};
 fn main() {
     loop {
         // 提示符
-        print!("请输入表达式（exit 退出）：");
+        print!("Enter dice expression (or 'exit' to quit): ");
         io::stdout().flush().unwrap();
 
         // 读取一行输入
