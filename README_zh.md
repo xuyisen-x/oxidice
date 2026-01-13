@@ -56,7 +56,7 @@ wasm-pack build --target bundler
 wasm-pack build --target web
 ```
 
-后续使用见示例项目：
+后续使用见[示例项目](https://github.com/xuyisen-x/oxidice-example)：
 
 ## 详细介绍
 
