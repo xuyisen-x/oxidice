@@ -4,7 +4,7 @@
 
 ## 概述
 
-Oxidice 是一款为桌面角色扮演游戏系统设计的骰子表达式解析器和执行引擎。支持大多数常见的骰子语法，也加入了部分自定义语法，并为前端应用提供了 Rust API 和 WebAssembly 接口。可以在网页应用中直接使用，也可以配合[@3d-dice/dice-box](https://github.com/3d-dice/dice-box)，相应的动画
+Oxidice 是一款为桌面角色扮演游戏系统设计的骰子表达式解析器和执行引擎。支持大多数常见的骰子语法，也加入了部分自定义语法，并为前端应用提供了 Rust API 和 WebAssembly 接口。可以在网页应用中直接使用，也可以配合[@3d-dice/dice-box](https://github.com/3d-dice/dice-box)相应的动画
 
 ## 项目动机
 
@@ -104,6 +104,8 @@ wasm-pack build --target web
 ### 具体语法与优先级
 
 解析器使用递归下降法实现，具体语法如下：`[]` 表示可选，`{}` 表示重复零或多次
+
+> 注意，这里的`**`仅用于列表重复，不是幂运算符
 
 ```
 expr            = term { ("+" | "-") term } ;
