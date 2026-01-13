@@ -1,5 +1,7 @@
 # OXIDICE
 
+[简体中文](README_zh.md) | English
+
 > Note: This README is translated from `README_zh.md` by ChatGPT.
 
 A fast, extensible dice expression engine for tabletop role-playing games, written in Rust and able to compile to WASM.
@@ -196,11 +198,11 @@ Parameters in `[]` are optional. Parameters in `{}` are required.
 - `{dp}min{x}`: set all values below `x` to `x`, returns a dice pool. Examples: `4d6min3`, `2d20min(1d4 + 2)`.
 - `{dp}max{x}`: set all values above `x` to `x`, returns a dice pool. Examples: `4d6max4`, `2d20max15`.
 - `{dp}r{mod_param}[limit]`: reroll dice that match `mod_param`. If the new roll still matches, reroll recursively. Returns a dice pool. `limit` restricts rerolling (default: no limit). Examples: `4d6r<3`, `(2d10)d20r=1lt2lc5`. Note: There is no `ro` modifier; use `lt1` to emulate it.
-- `{dp}![mod_param][limit]`: for each die matching `mod_param`, roll an extra die; if that roll also matches, keep exploding recursively. Returns a dice pool. If `mod_param` is omitted, it defaults to the die's maximum value (e.g. `1d6!` is `1d6!>5`). Examples: `1d6!>5`, `2d10!lt3`.
+- `{dp}![mod_param][limit]`: for each die matching `mod_param`, roll an extra die; if that roll also matches, keep exploding recursively. Returns a dice pool. If `mod_param` is omitted, it defaults to the die's maximum value. Examples: `1d6!>5`, `2d10!lt3`.
 - `{dp}!![mod_param][limit]`: similar to the above, but the new roll is added to the triggering die rather than added as a separate die.
 - `{dp}sf{mod_param}`: remove dice matching `mod_param`, returns a dice pool. Example: `4d6sf<3`.
 - `{dp|sp}df{mod_param}`: mark dice in a dice pool or success pool as failures, returns a success pool. Examples: `4d6df>5`, `4d20cs>=15df=1`.
-- `{dp|sp}cs{mod_param}`: mark dice in a success pool as successes, returns a success pool. Example: `4d20cs>=15`.
+- `{dp|sp}cs{mod_param}`: mark dice in a dice pool or success pool as successes, returns a success pool. Example: `4d20cs>=15`.
 
 #### Functions
 
