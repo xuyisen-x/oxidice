@@ -49,7 +49,7 @@ pub enum NodeLayout {
     TightInfix(Box<OutputNode>, Box<OutputNode>), // 紧凑中缀操作符: Left+Label+Right (例如 2d6, kh3)
     TightPostfix(Box<OutputNode>),                // 后缀操作符: Child+Label (例如 3 dF, 4 dC)
     Function(Vec<OutputNode>), // 函数调用: Label + "(" + Children.join(",") + ")"
-    // 特殊函数调用: Label + Children[0] + "(" + Children[1] + ")"
+    // 特殊函数调用: Label + Children[0] + Children[2] + "(" + Children[1] + ")"
     Filter(Box<String>, Box<OutputNode>, Box<OutputNode>),
     // 特殊修饰符，如爆炸、重投等，mod_param, lt, lc
     SpecialModifier(

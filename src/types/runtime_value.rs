@@ -99,7 +99,7 @@ pub enum DieOutcome {
     Failure, // 失败
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RollId(pub u32); // A simple wrapper for dice identifiers
 
 // impl RollId {
