@@ -549,8 +549,9 @@ impl ExecutionContext {
                         // 记录新骰子的索引和结果
                         new_rolls.push((state.pool.details.len() - 1, new_value));
                     }
-                    Ok((new_rolls, Vec::new()))
+                    Ok(new_rolls)
                 },
+                false,
             )?,
             EvalNode::DiceCompoundExplode(dp_id, mod_param_node, limit_node) => self
                 .process_dynamic_op(
@@ -573,8 +574,9 @@ impl ExecutionContext {
                             // 记录新骰子投掷的索引和结果
                             new_rolls.push((*idx, new_value));
                         }
-                        Ok((new_rolls, Vec::new()))
+                        Ok(new_rolls)
                     },
+                    false,
                 )?,
             EvalNode::DiceReroll(dp_id, mod_param_node, limit_node) => self.process_dynamic_op(
                 id,
@@ -603,8 +605,9 @@ impl ExecutionContext {
                         // 记录新骰子的索引和结果
                         new_rolls.push((state.pool.details.len() - 1, new_value));
                     }
-                    Ok((new_rolls, rolls_to_remove))
+                    Ok(new_rolls)
                 },
+                true,
             )?,
         };
 
@@ -946,9 +949,10 @@ impl ExecutionContext {
         mod_param_node: Option<ModParamNode>,
         limit_node: Option<LimitNode>,
         merge_fn: MergeFn,
+        removed: bool, // 如果为真，满足条件的骰子将会从动画中移除
     ) -> Result<Option<RuntimeValue>, String>
     where
-        MergeFn: Fn(&mut DynamicState) -> Result<(Vec<(usize, i32)>, Vec<RollId>), String>,
+        MergeFn: Fn(&mut DynamicState) -> Result<Vec<(usize, i32)>, String>,
     {
         let idx = node_id.to_index();
 
@@ -1060,9 +1064,7 @@ impl ExecutionContext {
                     .map(|(i, d)| (i, d.result))
                     .collect::<Vec<(usize, i32)>>()
             } else {
-                let (new_dice, dice_to_remove) = merge_fn(state)?;
-                self.remove_requests.extend(dice_to_remove.into_iter());
-                new_dice
+                merge_fn(state)?
             };
             state.pending_dice.clear(); // 无论如何，清空旧的待处理骰子
 
@@ -1083,6 +1085,13 @@ impl ExecutionContext {
 
                 // 如果不为空，准备新的接受对象，并准备请求
                 if !new_rolls.is_empty() {
+                    if removed {
+                        for &idx in new_rolls.iter() {
+                            self.remove_requests
+                                .extend(state.pool.details[idx].roll_id.iter());
+                        }
+                    }
+
                     state.pending_dice = new_rolls.iter().map(|i| (*i, None, None)).collect();
 
                     // 构造请求
