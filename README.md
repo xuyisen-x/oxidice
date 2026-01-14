@@ -19,7 +19,7 @@ This project started for two main reasons:
    - Missing or incomplete support for nested rolls (e.g. `(1d6)d6`). For example, the engine used by Roll20 does not support nested rolls, and while FVTT's engine supports them, the accompanying roll animations and result rendering are not solid.
    - Lack of native list support. Most engines do not support lists; list behavior in FVTT is odd and hard to use.
    - Inconsistent modifier behavior. When multiple modifiers are applied to a die, users have a hard time predicting the final result.
-   - Function support (e.g. `max`, `min`). FVTT relies on JavaScript functions; beyond security concerns, this approach prevents functions from being used anywhere in an expression.
+   - Function support (e.g. `floor`, `abs`). FVTT relies on JavaScript functions; beyond security concerns, this approach prevents functions from being used anywhere in an expression.
    - You cannot know if an expression is valid before rolling, and invalid expressions do not provide helpful errors.
 
 2. Poor developer experience when using existing dice expression parsers and engines. Most are based on JavaScript and lack complete type hints, which makes development and debugging painful.
