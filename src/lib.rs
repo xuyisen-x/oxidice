@@ -83,13 +83,7 @@ pub fn check_constant_integer(input: String) -> ConstantIntegerCheckResult {
         Err(e) => return NotConstant(e),
     };
     match folded_hir {
-        HIR::Number(NumberType::Constant(c)) => {
-            if c.fract() == 0.0 {
-                Constant(c)
-            } else {
-                NotConstant("The constant is not an integer.".to_string())
-            }
-        }
+        HIR::Number(NumberType::Constant(c)) => Constant(c as i32 as f64),
         _ => NotConstant("The expression is not a constant.".to_string()),
     }
 }
