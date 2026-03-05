@@ -193,8 +193,8 @@ fn parse_atom(input: &mut &str) -> WNResult<Expr> {
         'a'..='z' | 'A'..='Z' => parse_function_call, // 是字母，直接解析函数
         '[' => parse_list,          // 是[，解析列表
         '0'..='9' | '.' => parse_number,        // 是数字，解析数字
-        '(' => delimited("(", parse_expr, ")"), // 括号表达式
-        '{' => delimited("{", parse_expr, "}"), // 花括号表达
+        '(' => delimited("(", delimited(space0, parse_expr, space0), ")"), // 括号表达式
+        '{' => delimited("{", delimited(space0, parse_expr, space0), "}"), // 花括号表达式
         _ => fail                              // 其他字符直接报错
     )
     .parse_next(input)
